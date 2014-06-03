@@ -44,39 +44,39 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
     function getVariables()
     {
         $variables = array(
-                /*T*/'Plugin Name'/*/T*/ => array (
+                lang('Plugin Name') => array (
                         'type'          =>'hidden',
-                        'description'   =>/*T*/'How CE sees this plugin (not to be confused with the Signup Name)'/*/T*/,
-                        'value'         =>/*T*/'OpenSRS'/*/T*/
+                        'description'   =>lang('How CE sees this plugin (not to be confused with the Signup Name)'),
+                        'value'         =>lang('OpenSRS')
                 ),
-                /*T*/'Use testing server'/*/T*/ => array(
+                lang('Use testing server') => array(
                         'type'          =>'yesno',
-                        'description'   =>/*T*/'Select Yes if you wish to use OpenSRS\'s testing environment, so that transactions are not actually made.'/*/T*/,
+                        'description'   =>lang('Select Yes if you wish to use OpenSRS\'s testing environment, so that transactions are not actually made.'),
                         'value'         => 0
                 ),
-                /*T*/'Username'/*/T*/ => array(
+                lang('Username') => array(
                         'type'          => 'text',
-                        'description'   => /*T*/'Enter your username for your OpenSRS reseller account.<br/>'/*/T*/,
+                        'description'   => lang('Enter your username for your OpenSRS reseller account.<br/>'),
                         'value'         => '',
                 ),
-                /*T*/'Private Key'/*/T*/  => array(
+                lang('Private Key')  => array(
                         'type'          => 'text',
-                        'description'   => /*T*/'Enter your OpenSRS reseller private key.'/*/T*/,
+                        'description'   => lang('Enter your OpenSRS reseller private key.'),
                         'value'         => '',
                 ),
-                /*T*/'Supported Features'/*/T*/  => array(
+                lang('Supported Features')  => array(
                         'type'          => 'label',
-                        'description'   => '* './*T*/'TLD Lookup, with Name Suggestions'/*/T*/.'<br>* './*T*/'Domain Registration'/*/T*/.' <br>* './*T*/'Domain Registration with ID Protect'/*/T*/.' <br>* './*T*/'Existing Domain Importing'/*/T*/.' <br>* './*T*/'Get / Set Auto Renew Status'/*/T*/.' <br>* './*T*/'Get / Set Nameserver Records'/*/T*/.' <br>* './*T*/'Get / Set Contact Information'/*/T*/.' <br>* './*T*/'Get / Set Registrar Lock'/*/T*/.' <br>* './*T*/'Initiate Domain Transfer'/*/T*/.' <br>* './*T*/'Automatically Renew Domain'/*/T*/.' <br>',
+                        'description'   => '* '.lang('TLD Lookup, with Name Suggestions').'<br>* '.lang('Domain Registration').' <br>* '.lang('Domain Registration with ID Protect').' <br>* '.lang('Existing Domain Importing').' <br>* '.lang('Get / Set Auto Renew Status').' <br>* '.lang('Get / Set Nameserver Records').' <br>* '.lang('Get / Set Contact Information').' <br>* '.lang('Get / Set Registrar Lock').' <br>* '.lang('Initiate Domain Transfer').' <br>* '.lang('Automatically Renew Domain').' <br>',
                         'value'         => ''
                 ),
-               /*T*/'Actions'/*/T*/ => array (
+               lang('Actions') => array (
                                 'type'          => 'hidden',
-                                'description'   => /*T*/'Current actions that are active for this plugin (when a domain isn\'t registered)'/*/T*/,
+                                'description'   => lang('Current actions that are active for this plugin (when a domain isn\'t registered)'),
                                 'value'         => 'Register'
                                 ),
-            /*T*/'Registered Actions'/*/T*/ => array (
+            lang('Registered Actions') => array (
                                 'type'          => 'hidden',
-                                'description'   => /*T*/'Current actions that are active for this plugin (when a domain is registered)'/*/T*/,
+                                'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
                                 'value'         => 'Renew (Renew Domain),DomainTransfer (Initiate Transfer),Cancel',
                                 )
         );
