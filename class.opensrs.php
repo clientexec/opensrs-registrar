@@ -246,7 +246,7 @@ class OpenSRS
                             <item key='city'>".$params['RegistrantCity']."</item>
                             <item key='phone'>".$params['RegistrantPhone']."</item>
                             <item key='email'>".$params['RegistrantEmailAddress']."</item>
-                            <item key='org_name'>".$params['RegistrantOrganizationName']."</item>
+                            <item key='org_name'>".htmlentities($params['RegistrantOrganizationName'])."</item>
                             <item key='lang_pref'>".$params['RegistrantLanguage']."</item>
                            </dt_assoc>";
 
@@ -350,7 +350,7 @@ class OpenSRS
                             <item key='city'>".$params['RegistrantCity']."</item>
                             <item key='phone'>".$params['RegistrantPhone']."</item>
                             <item key='email'>".$params['RegistrantEmailAddress']."</item>
-                            <item key='org_name'>".$params['RegistrantOrganizationName']."</item>
+                            <item key='org_name'>".htmlentities($params['RegistrantOrganizationName'])."</item>
                             <item key='lang_pref'>".$params['RegistrantLanguage']."</item>
                            </dt_assoc>";
 
@@ -923,7 +923,7 @@ class OpenSRS
                             <item key='city'>".$params['Registrant_City']."</item>
                             <item key='phone'>".$params['Registrant_Phone']."</item>
                             <item key='email'>".$params['Registrant_EmailAddress']."</item>
-                            <item key='org_name'>".$params['Registrant_OrganizationName']."</item>
+                            <item key='org_name'>".htmlentities($params['Registrant_OrganizationName'])."</item>
                            </dt_assoc>";
 
         $request = "<data_block>
