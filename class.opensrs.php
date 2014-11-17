@@ -885,8 +885,6 @@ class OpenSRS
                         <item key='op_type'>assign</item>
                     </dt_assoc>
                 </item>
-                </dt_assoc>
-                </item>
             </dt_assoc>
         </data_block>";
 
