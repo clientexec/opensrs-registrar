@@ -162,6 +162,7 @@ class OpenSRS
 
             $workingArray['status'] = $domainStatus;
 
+            $workingArray['domain'] = $workingArray['sld'];
             $finalArray['result'][] = $workingArray;
         }
         //return the final array of checked domains

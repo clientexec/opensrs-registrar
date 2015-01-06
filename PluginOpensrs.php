@@ -121,15 +121,13 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
             CE_Lib::log(1, "OpenSRS Lookup Failed: ".$return['status']['response_text']);
             throw new Exception("OpenSRS Lookup Failed: ".$return['status']['response_text']);
         }
-
+        unset($return['status']);
         //TODO we need to ensure that this is the array returned by checkDomain
         //since we can pass namesuggest we might get back a list of domains
         //for each domain let's add to domains array
         //$aDomain = DomainNameGateway::splitDomain($domainName);
         //$domains[] = array("tld"=>$aDomain[1],"domain"=>$aDomain[0],"status"=>$status);
         //return array("results"=>$domains);
-
-
 
         return $return;
     }
