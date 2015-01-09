@@ -557,7 +557,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         $data['domain'] = strtolower($params['sld']).".".strtolower($params['tld']);
         $data['expiration'] = $return['generalInfo']['registry_expiredate'];
         $data['registrationstatus'] = 'Registered';
-        $data['purchasestatus'] = 'Purcahsed on '.$return['generalInfo']['registry_createdate'];
+        $data['purchasestatus'] = 'Purchased on '.$return['generalInfo']['registry_createdate'];
         $data['autorenew'] = $return['generalInfo']['auto_renew'];
 
         return $data;
