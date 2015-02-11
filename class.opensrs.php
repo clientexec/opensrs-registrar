@@ -663,7 +663,6 @@ class OpenSRS
             $response = $response[4]['#']['dt_assoc'][0]['#']['item'];
 
              foreach ( $response as $key => $value ) {
-                CE_Lib::log(4, $value['@']['key']);
                 if ( $value['@']['key'] == 'auto_renew') {
                     $autoRenewId = $key;
                 }
