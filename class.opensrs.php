@@ -658,9 +658,14 @@ class OpenSRS
 
         // Determine what we are outputting
         } else if($type == 'general') {
-
+            $attributesKey = 0;
+            foreach ( $response as $key => $tempResponse ) {
+              if ( $tempResponse['@']['key'] == 'attributes' ) {
+                $attributesKey = $key;
+              }
+            }
             // Set the next block of the response
-            $response = $response[4]['#']['dt_assoc'][0]['#']['item'];
+            $response = $response[$attributesKey]['#']['dt_assoc'][0]['#']['item'];
 
              foreach ( $response as $key => $value ) {
                 if ( $value['@']['key'] == 'auto_renew') {
