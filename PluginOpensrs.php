@@ -210,7 +210,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
            return $transfer_status;
         }
 
-        throw new CE_Exception("Getting Domain Transfer Status Failed: ".$return[$status_text]['#']." <br> <br> ".@$attributes[0]['#']);
+        throw new CE_Exception("Getting Domain Transfer Status Failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
     }
 
 
@@ -276,7 +276,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
             return $transferId;
         }
 
-        throw new CE_Exception("Starting Domain Transfer Failed: ".$return[$status_text]['#']." <br> <br> ".@$attributes[0]['#']);
+        throw new CE_Exception("Starting Domain Transfer Failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
 
     }
 
@@ -369,7 +369,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         }
         // Something went very wrong
 
-        throw new CE_Exception("Domain renewal failed: ".$return[$status_text]['#']." <br> <br> ".@$attributes[0]['#']);
+        throw new CE_Exception("Domain renewal failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
     }
 
     /**
@@ -478,7 +478,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         }
         // Something went very wrong
 
-        throw new CE_Exception("Domain registration failed: ".$return[$status_text]['#']." <br> <br> ".@$attributes[0]['#']);
+        throw new CE_Exception("Domain registration failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
     }
 
     function disablePrivateRegistration($parmas)

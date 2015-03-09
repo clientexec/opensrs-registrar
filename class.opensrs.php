@@ -1014,7 +1014,7 @@ class OpenSRS
         $fp = @fsockopen ("ssl://$this->host", $this->port, $errno, $errstr, 30);
         if (!$fp) {
             CE_Lib::log(4, "Couldn't connect to OpenSRS: $errno, $errstr");
-            throw new Exception("OpenSRS API Error: Unable to communicate with OpenSRS. Please check your settings.", EXCEPTION_CODE_CONNECTION_ISSUE);
+            throw new CE_Exception("OpenSRS API Error: Unable to communicate with OpenSRS: $errstr", EXCEPTION_CODE_CONNECTION_ISSUE);
         }
 
         // Send the request
