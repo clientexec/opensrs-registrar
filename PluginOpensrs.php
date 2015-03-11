@@ -749,17 +749,15 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
 
     function sendTransferKey ($params)
     {
-        throw new Exception('Method sendTransferKey() has not been implemented yet.');
+        throw new CE_Exception('Method sendTransferKey() has not been implemented yet.');
     }
     function getDNS ($params)
     {
-        throw new Exception('Getting DNS Records is not supported in this plugin.', EXCEPTION_CODE_NO_EMAIL);
+        throw new CE_Exception('Getting DNS Records is not supported in this plugin.', EXCEPTION_CODE_NO_EMAIL);
     }
     function setDNS ($params)
     {
-        throw new Exception('Method setDNS() has not been implemented yet.');
+        throw new CE_Exception('Method setDNS() has not been implemented yet.');
     }
 
 }
-
-?>
