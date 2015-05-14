@@ -77,8 +77,13 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
             lang('Registered Actions') => array (
                                 'type'          => 'hidden',
                                 'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
-                                'value'         => 'Renew (Renew Domain),DomainTransfer (Initiate Transfer),Cancel',
-                                )
+                                'value'         => 'Renew (Renew Domain),DomainTransfer (Initiate Transfer),SendTransferKey (Send Auth Info),Cancel',
+                                ),
+              lang('Registered Actions For Customer') => array (
+                                'type'          => 'hidden',
+                                'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
+                                'value'         => 'SendTransferKey (Send Auth Info)',
+            )
         );
 
         return $variables;
@@ -747,9 +752,18 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
 
     }
 
+    function doSendTransferKey($params)
+    {
+        $userPackage = new UserPackage($params['userPackageId']);
+        $this->sendTransferKey($this->buildRegisterParams($userPackage,$params));
+        return 'Successfully sent auth info for ' . $userPackage->getCustomField('Domain Name');
+    }
+
     function sendTransferKey ($params)
     {
-        throw new CE_Exception('Sending transfer key is not supported in this plugin.');
+        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
+        $opensrs->send_authcode(strtolower($params['sld']), strtolower($params['tld']));
     }
     function getDNS ($params)
     {

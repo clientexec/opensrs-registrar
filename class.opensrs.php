@@ -592,6 +592,39 @@ class OpenSRS
         return $response;
     }
 
+    function send_authcode($domain, $tld)
+    {
+        // Build the request
+        $request = "<data_block>
+                      <dt_assoc>
+                        <item key='protocol'>XCP</item>
+                        <item key='action'>send_authcode</item>
+                        <item key='object'>domain</item>
+                        <item key='attributes'>
+                          <dt_assoc>
+                            <item key='domain_name'>".$domain.".".$tld."</item>
+                          </dt_assoc>
+                        </item>
+                      </dt_assoc>
+                    </data_block>";
+
+        // Send the request to OpenSRS
+        $response = $this->_buildAndSendRequest($request);
+
+        // Check the response
+        if ($response == null) {
+            return null;
+        }
+
+        // XMLize the reply
+        $response = XmlFunctions::xmlize($response);
+
+        // Get the first part of the response
+        $response = $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
+
+        return $response;
+    }
+
     /**
      * Sets the renew status of a domain
      *
@@ -1055,5 +1088,3 @@ class OpenSRS
         return array(mb_substr($domain, 0, $position), mb_substr($domain, $position + 1));
     }
 }
-
-?>
