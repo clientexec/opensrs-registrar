@@ -11,7 +11,6 @@
  */
 
 require_once 'modules/admin/models/RegistrarPlugin.php';
-require_once 'modules/domains/models/ICanImportDomains.php';
 require_once dirname(__FILE__).'/class.opensrs.php';
 
 /**
@@ -26,15 +25,18 @@ require_once dirname(__FILE__).'/class.opensrs.php';
  * @version  2
  * @link     http://www.clientexec.com
  */
-class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
+class PluginOpensrs extends RegistrarPlugin
 {
+
+    public $features = [
+        'nameSuggest' => true,
+        'importDomains' => true,
+        'importPrices' => false,
+    ];
 
     var $liveHost = "rr-n1-tor.opensrs.net";
     var $testHost = "horizon.opensrs.net";
     var $connPort = "55443";
-
-    // Set a var for support of name suggest
-    var $supportsNamesuggest = true;
 
     /**
      * Function to return a list of configurable variables for the class
@@ -107,7 +109,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->logger, $this->user);
 
         // Check if we were passed any additional TLD's
-        if(!@$params['namesuggest']) {
+        if (!@$params['namesuggest']) {
             $params['namesuggest'] = array();
             $namesuggest = false;
         }
@@ -145,8 +147,8 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
     function doRenew($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
-        $orderid = $this->renewDomain($this->buildRenewParams($userPackage,$params));
-        $userPackage->setCustomField("Registrar Order Id",$userPackage->getCustomField("Registrar").'-'.$orderid);
+        $orderid = $this->renewDomain($this->buildRenewParams($userPackage, $params));
+        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar").'-'.$orderid);
         return $userPackage->getCustomField('Domain Name') . ' has been renewed.';
     }
 
@@ -158,8 +160,8 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
     function doDomainTransfer($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
-        $transferid = $this->initiateTransfer($this->buildTransferParams($userPackage,$params));
-        $userPackage->setCustomField("Registrar Order Id",$userPackage->getCustomField("Registrar").'-'.$transferid);
+        $transferid = $this->initiateTransfer($this->buildTransferParams($userPackage, $params));
+        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar").'-'.$transferid);
         $userPackage->setCustomField('Transfer Status', $transferid);
         return "Transfer of has been initiated.";
     }
@@ -174,22 +176,33 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         }
 
         $params['domain'] = strtolower($params['sld'].".".$params['tld']);
-        $opensrs = new OpenSRS($host, $this->connPort,
-                $params['Username'],
-                $params['Private Key'],
-                $this->user);
+        $opensrs = new OpenSRS(
+            $host,
+            $this->connPort,
+            $params['Username'],
+            $params['Private Key'],
+            $this->user
+        );
 
         $return = $opensrs->check_transfer_status($params);
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception ("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
         }
-        foreach ($return as $key=>$val) {
-            if ($val['@']['key'] == 'response_code') $status_key = $key;
-            if ($val['@']['key'] == 'is_success') $success_key = $key;
-            if ($val['@']['key'] == 'response_text') $status_text = $key;
-            if ($val['@']['key'] == 'attributes') $attributes_key = $key;
+        foreach ($return as $key => $val) {
+            if ($val['@']['key'] == 'response_code') {
+                $status_key = $key;
+            }
+            if ($val['@']['key'] == 'is_success') {
+                $success_key = $key;
+            }
+            if ($val['@']['key'] == 'response_text') {
+                $status_text = $key;
+            }
+            if ($val['@']['key'] == 'attributes') {
+                $attributes_key = $key;
+            }
         }
 
         CE_Lib::log(4, "OpenSRS Transfer Status Response: ".$return[$status_text]['#']);
@@ -201,18 +214,20 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         if (isset($attributes_key)) {
             $attributes = $return[$attributes_key]['#']['dt_assoc'][0]['#']['item'];
             if ($return[$success_key]['#'] == 1) {
-                foreach ($attributes as $key=>$val) {
-                    if ($val['@']['key'] == 'status') $transfer_status = $val['#'];
+                foreach ($attributes as $key => $val) {
+                    if ($val['@']['key'] == 'status') {
+                        $transfer_status = $val['#'];
+                    }
                 }
             }
         }
         $code = $return[$status_key]['#'];
         if ($code == 210 || $code == 200 || $code == 250) {
              // We are completed, so update our internal status so we don't try to check everytime.
-            if ( $transfer_status == 'completed' || $transfer_status == 'The transfer completed successfully' ) {
+            if ($transfer_status == 'completed' || $transfer_status == 'The transfer completed successfully') {
                 $userPackage->setCustomField('Transfer Status', 'Completed');
             }
-           return $transfer_status;
+            return $transfer_status;
         }
 
         throw new CE_Exception("Getting Domain Transfer Status Failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
@@ -228,8 +243,10 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         }
 
         $params['domain'] = strtolower($params['sld'].".".$params['tld']);
-        $params['RegistrantPhone'] = $this->_plugin_opensrs_validatePhone($params['RegistrantPhone'],$params['RegistrantCountry']);
-        if ($params['RegistrantOrganizationName'] == "") $params['RegistrantOrganizationName'] = $params['RegistrantFirstName']." ".$params['RegistrantLastName'];
+        $params['RegistrantPhone'] = $this->_plugin_opensrs_validatePhone($params['RegistrantPhone'], $params['RegistrantCountry']);
+        if ($params['RegistrantOrganizationName'] == "") {
+            $params['RegistrantOrganizationName'] = $params['RegistrantFirstName']." ".$params['RegistrantLastName'];
+        }
 
         /* Grab some information that isn't passed by default */
         $query = "SELECT id from customuserfields where type='8'";
@@ -243,26 +260,40 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         $query = "SELECT value FROM user_customuserfields WHERE customid=? AND userid=?";
         $result = $this->db->query($query, $fieldid, $userid);
         list($lang) = $result->fetch();
-        if (strtolower($lang) == 'french') $params['RegistrantLanguage'] = 'FR';
-        else $params['RegistrantLanguage'] = 'EN';
+        if (strtolower($lang) == 'french') {
+            $params['RegistrantLanguage'] = 'FR';
+        } else {
+            $params['RegistrantLanguage'] = 'EN';
+        }
 
 
-        $opensrs = new OpenSRS($host, $this->connPort,
-                $params['Username'],
-                $params['Private Key'],
-                $this->user);
+        $opensrs = new OpenSRS(
+            $host,
+            $this->connPort,
+            $params['Username'],
+            $params['Private Key'],
+            $this->user
+        );
 
         $return = $opensrs->initiate_transfer($params);
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception ("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
         }
-        foreach ($return as $key=>$val) {
-            if ($val['@']['key'] == 'response_code') $status_key = $key;
-            if ($val['@']['key'] == 'is_success') $success_key = $key;
-            if ($val['@']['key'] == 'response_text') $status_text = $key;
-            if ($val['@']['key'] == 'attributes') $attributes_key = $key;
+        foreach ($return as $key => $val) {
+            if ($val['@']['key'] == 'response_code') {
+                $status_key = $key;
+            }
+            if ($val['@']['key'] == 'is_success') {
+                $success_key = $key;
+            }
+            if ($val['@']['key'] == 'response_text') {
+                $status_text = $key;
+            }
+            if ($val['@']['key'] == 'attributes') {
+                $attributes_key = $key;
+            }
         }
 
         CE_Lib::log(4, "OpenSRS Transfer Response: ".$return[$status_text]['#']);
@@ -270,8 +301,10 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         if (isset($attributes_key)) {
             $attributes = $return[$attributes_key]['#']['dt_assoc'][0]['#']['item'];
             if ($return[$success_key]['#'] == 1) {
-                foreach ($attributes as $key=>$val) {
-                    if ($val['@']['key'] == 'id') $transferId = $val['#'];
+                foreach ($attributes as $key => $val) {
+                    if ($val['@']['key'] == 'id') {
+                        $transferId = $val['#'];
+                    }
                 }
             }
         }
@@ -282,7 +315,6 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         }
 
         throw new CE_Exception("Starting Domain Transfer Failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
-
     }
 
 
@@ -294,8 +326,8 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
     function doRegister($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
-        $orderid = $this->registerDomain($this->buildRegisterParams($userPackage,$params));
-        $userPackage->setCustomField("Registrar Order Id",$userPackage->getCustomField("Registrar").'-'.$orderid);
+        $orderid = $this->registerDomain($this->buildRegisterParams($userPackage, $params));
+        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar").'-'.$orderid);
         return $userPackage->getCustomField('Domain Name') . ' has been registered.';
     }
 
@@ -313,25 +345,28 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         }
 
 
-        $opensrs = new OpenSRS($host, $this->connPort,
-                $params['Username'],
-                $params['Private Key'],
-                $this->user);
+        $opensrs = new OpenSRS(
+            $host,
+            $this->connPort,
+            $params['Username'],
+            $params['Private Key'],
+            $this->user
+        );
 
         //need to get current expiration date
         //so actually call up the plugin to get it from registrar
-        try{
+        try {
             require_once 'modules/clients/models/DomainNameGateway.php';
             $userPackage = new UserPackage($params['userPackageId']);
             $dng = new DomainNameGateway($this->user);
             $generalInfo = $dng->getGeneralInfoViaPlugin($userPackage);
-            $expires = explode("-",$generalInfo['expires']);
+            $expires = explode("-", $generalInfo['expires']);
             $params['expirationyear'] = (int) $expires[0];
             $params['renewname'] = $userPackage->getCustomField("Auto Renew");
-            if(!$params['renewname'] == 0) {
+            if (!$params['renewname'] == 0) {
                 $params['renewname'] = 1;
             }
-        }catch(Exception $ex){
+        } catch (Exception $ex) {
             throw new CE_Exception("Domain renewal failed: ".$ex->getMessage());
         }
 
@@ -341,23 +376,33 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception ("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
         }
-        foreach ($return as $key=>$val) {
-            if ($val['@']['key'] == 'response_code') $status_key = $key;
-            if ($val['@']['key'] == 'is_success') $success_key = $key;
-            if ($val['@']['key'] == 'response_text') $status_text = $key;
-            if ($val['@']['key'] == 'attributes') $attributes_key = $key;
+        foreach ($return as $key => $val) {
+            if ($val['@']['key'] == 'response_code') {
+                $status_key = $key;
+            }
+            if ($val['@']['key'] == 'is_success') {
+                $success_key = $key;
+            }
+            if ($val['@']['key'] == 'response_text') {
+                $status_text = $key;
+            }
+            if ($val['@']['key'] == 'attributes') {
+                $attributes_key = $key;
+            }
         }
 
         CE_Lib::log(4, "OpenSRS Registration Response: ".$return[$status_text]['#']);
 
         if (isset($attributes_key)) {
-            if(isset($return[$attributes_key]) && isset($return[$attributes_key]['#']['dt_assoc'][0]['#']['item'])){
+            if (isset($return[$attributes_key]) && isset($return[$attributes_key]['#']['dt_assoc'][0]['#']['item'])) {
                 $attributes = $return[$attributes_key]['#']['dt_assoc'][0]['#']['item'];
                 if ($return[$success_key]['#'] == 1) {
-                    foreach ($attributes as $key=>$val) {
-                        if ($val['@']['key'] == 'id') $regId = $val['#'];
+                    foreach ($attributes as $key => $val) {
+                        if ($val['@']['key'] == 'id') {
+                            $regId = $val['#'];
+                        }
                     }
                 }
             }
@@ -401,19 +446,24 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
             }
         }
 
-        if(!@$params['renewname'] == 0) {
+        if (!@$params['renewname'] == 0) {
             $params['renewname'] = 1;
         }
 
-        $opensrs = new OpenSRS($host, $this->connPort,
-                $params['Username'],
-                $params['Private Key'],
-                $this->user);
+        $opensrs = new OpenSRS(
+            $host,
+            $this->connPort,
+            $params['Username'],
+            $params['Private Key'],
+            $this->user
+        );
 
 
         $params['domain'] = strtolower($params['sld'].".".$params['tld']);
-        $params['RegistrantPhone'] = $this->_plugin_opensrs_validatePhone($params['RegistrantPhone'],$params['RegistrantCountry']);
-        if ($params['RegistrantOrganizationName'] == "") $params['RegistrantOrganizationName'] = $params['RegistrantFirstName']." ".$params['RegistrantLastName'];
+        $params['RegistrantPhone'] = $this->_plugin_opensrs_validatePhone($params['RegistrantPhone'], $params['RegistrantCountry']);
+        if ($params['RegistrantOrganizationName'] == "") {
+            $params['RegistrantOrganizationName'] = $params['RegistrantFirstName']." ".$params['RegistrantLastName'];
+        }
 
         // Process the extended attributes
         if (is_array($params['ExtendedAttributes'])) {
@@ -434,8 +484,11 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         $query = "SELECT value FROM user_customuserfields WHERE customid=? AND userid=?";
         $result = $this->db->query($query, $fieldid, $userid);
         list($lang) = $result->fetch();
-        if (strtolower($lang) == 'french') $params['RegistrantLanguage'] = 'FR';
-        else $params['RegistrantLanguage'] = 'EN';
+        if (strtolower($lang) == 'french') {
+            $params['RegistrantLanguage'] = 'FR';
+        } else {
+            $params['RegistrantLanguage'] = 'EN';
+        }
 
 
         $return = $opensrs->register_domain($params);
@@ -444,13 +497,21 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new CE_Exception ("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            throw new CE_Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
         }
-        foreach ($return as $key=>$val) {
-            if ($val['@']['key'] == 'response_code') $status_key = $key;
-            if ($val['@']['key'] == 'is_success') $success_key = $key;
-            if ($val['@']['key'] == 'response_text') $status_text = $key;
-            if ($val['@']['key'] == 'attributes') $attributes_key = $key;
+        foreach ($return as $key => $val) {
+            if ($val['@']['key'] == 'response_code') {
+                $status_key = $key;
+            }
+            if ($val['@']['key'] == 'is_success') {
+                $success_key = $key;
+            }
+            if ($val['@']['key'] == 'response_text') {
+                $status_text = $key;
+            }
+            if ($val['@']['key'] == 'attributes') {
+                $attributes_key = $key;
+            }
         }
 
         CE_Lib::log(4, "OpenSRS Registration Response: ".$return[$status_text]['#']);
@@ -458,8 +519,10 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         if (isset($attributes_key)) {
             $attributes = $return[$attributes_key]['#']['dt_assoc'][0]['#']['item'];
             if ($return[$success_key]['#'] == 1) {
-                foreach ($attributes as $key=>$val) {
-                    if ($val['@']['key'] == 'id') $regId = $val['#'];
+                foreach ($attributes as $key => $val) {
+                    if ($val['@']['key'] == 'id') {
+                        $regId = $val['#'];
+                    }
                 }
             }
         }
@@ -467,11 +530,11 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         if ($code == 210 || $code == 200 || $code == 250) {
             // Registration was fine
             // Check about private registration
-            if ( isset($params['package_addons']['IDPROTECT']) && $params['package_addons']['IDPROTECT'] == 1 ) {
+            if (isset($params['package_addons']['IDPROTECT']) && $params['package_addons']['IDPROTECT'] == 1) {
                 $return = $opensrs->enable_whois_privacy($params);
                 if ($return == null) {
                     CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-                    throw new CE_Exception ("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+                    throw new CE_Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
                 }
             }
             // return reg id for the domain
@@ -544,7 +607,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         // Get the domain info
         $return = $opensrs->get_domain_info(strtolower($params['sld']), strtolower($params['tld']), 'general');
 
-        if($return == null) {
+        if ($return == null) {
             // This function can break some domains in admin panel. For example, transfer's that aren't yet in the account.
             // So if the response is null, then don't show an error
             return null;
@@ -566,7 +629,6 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         $data['autorenew'] = $return['generalInfo']['auto_renew'];
 
         return $data;
-
     }
 
 
@@ -611,7 +673,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         return "+$code.$phone";
     }
 
-    function getContactInformation ($params)
+    function getContactInformation($params)
     {
         // Calculate the host
         $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
@@ -625,7 +687,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         return $return;
     }
 
-    function setContactInformation ($params)
+    function setContactInformation($params)
     {
         $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
 
@@ -633,7 +695,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         $opensrs->update_contact($params);
     }
 
-    function getNameServers ($params)
+    function getNameServers($params)
     {
         // Calculate the host
         $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
@@ -650,7 +712,7 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         return $return;
     }
 
-    function setNameServers ($params)
+    function setNameServers($params)
     {
         // Calculate the host
         $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
@@ -661,43 +723,50 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
         // Get the domain info
         $return = $opensrs->set_nameservers($params);
 
-        foreach ($return as $key=>$val) {
-            if ($val['@']['key'] == 'response_code') $status_key = $key;
-            if ($val['@']['key'] == 'is_success') $success_key = $key;
-            if ($val['@']['key'] == 'response_text') $status_text = $key;
-            if ($val['@']['key'] == 'attributes') $attributes_key = $key;
+        foreach ($return as $key => $val) {
+            if ($val['@']['key'] == 'response_code') {
+                $status_key = $key;
+            }
+            if ($val['@']['key'] == 'is_success') {
+                $success_key = $key;
+            }
+            if ($val['@']['key'] == 'response_text') {
+                $status_text = $key;
+            }
+            if ($val['@']['key'] == 'attributes') {
+                $attributes_key = $key;
+            }
         }
 
         CE_Lib::log(4, "OpenSRS SetNameServers Response: ".$return[$status_text]['#']);
-        if ( isset($return[$success_key]['#']) && $return[$success_key]['#']  == 1) {
+        if (isset($return[$success_key]['#']) && $return[$success_key]['#']  == 1) {
             return;
         } else {
             throw new CE_Exception($return[$status_text]['#']);
-
         }
     }
 
-    function checkNSStatus ($params)
+    function checkNSStatus($params)
     {
         throw new Exception('Method checkNSStatus() has not been implemented yet.');
     }
 
-    function registerNS ($params)
+    function registerNS($params)
     {
         throw new Exception('Method registerNS() has not been implemented yet.');
     }
 
-    function editNS ($params)
+    function editNS($params)
     {
         throw new Exception('Method editNS() has not been implemented yet.');
     }
 
-    function deleteNS ($params)
+    function deleteNS($params)
     {
         throw new Exception('Method deleteNS() has not been implemented yet.');
     }
 
-    function getRegistrarLock ($params)
+    function getRegistrarLock($params)
     {
         $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
@@ -706,39 +775,49 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception ("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
         }
-        foreach ($return as $key=>$val) {
-            if ($val['@']['key'] == 'response_code') $status_key = $key;
-            if ($val['@']['key'] == 'is_success') $success_key = $key;
-            if ($val['@']['key'] == 'response_text') $status_text = $key;
-            if ($val['@']['key'] == 'attributes') $attributes_key = $key;
+        foreach ($return as $key => $val) {
+            if ($val['@']['key'] == 'response_code') {
+                $status_key = $key;
+            }
+            if ($val['@']['key'] == 'is_success') {
+                $success_key = $key;
+            }
+            if ($val['@']['key'] == 'response_text') {
+                $status_text = $key;
+            }
+            if ($val['@']['key'] == 'attributes') {
+                $attributes_key = $key;
+            }
         }
 
         if (isset($attributes_key)) {
             $attributes = $return[$attributes_key]['#']['dt_assoc'][0]['#']['item'];
             if ($return[$success_key]['#'] == 1) {
-                foreach ($attributes as $key=>$val) {
-                    if ($val['@']['key'] == 'lock_state') $lockState = $val['#'];
+                foreach ($attributes as $key => $val) {
+                    if ($val['@']['key'] == 'lock_state') {
+                        $lockState = $val['#'];
+                    }
                 }
             }
         }
 
-        if ( isset($lockState) ) {
+        if (isset($lockState)) {
             return $lockState;
         }
 
-        throw new CE_Exception ("Could not determine lock state.");
+        throw new CE_Exception("Could not determine lock state.");
     }
 
     function doSetRegistrarLock($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
-        $this->setRegistrarLock($this->buildLockParams($userPackage,$params));
+        $this->setRegistrarLock($this->buildLockParams($userPackage, $params));
         return "Updated Registrar Lock.";
     }
 
-    function setRegistrarLock ($params)
+    function setRegistrarLock($params)
     {
         $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
@@ -747,31 +826,29 @@ class PluginOpensrs extends RegistrarPlugin implements ICanImportDomains
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception ("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
         }
-
     }
 
     function doSendTransferKey($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
-        $this->sendTransferKey($this->buildRegisterParams($userPackage,$params));
+        $this->sendTransferKey($this->buildRegisterParams($userPackage, $params));
         return 'Successfully sent auth info for ' . $userPackage->getCustomField('Domain Name');
     }
 
-    function sendTransferKey ($params)
+    function sendTransferKey($params)
     {
         $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
         $opensrs->send_authcode(strtolower($params['sld']), strtolower($params['tld']));
     }
-    function getDNS ($params)
+    function getDNS($params)
     {
         throw new CE_Exception('Getting DNS Records is not supported in this plugin.', EXCEPTION_CODE_NO_EMAIL);
     }
-    function setDNS ($params)
+    function setDNS($params)
     {
         throw new CE_Exception('Setting DNS Records is not supported in this plugin.');
     }
-
 }

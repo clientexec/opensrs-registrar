@@ -38,7 +38,7 @@ class OpenSRS
      *
      * @return OpenSRS An OpenSRS object
      */
-    function OpenSRS($host, $port, $username, $key, $user)
+    function __construct($host, $port, $username, $key, $user)
     {
         $this->host = $host;
         $this->port = $port;
@@ -61,7 +61,7 @@ class OpenSRS
         // Build the namesuggest items
         $i = 1;
         $namesuggestXml = "";
-        foreach($namesuggest AS $key) {
+        foreach ($namesuggest AS $key) {
             $namesuggestXml .= "<item key='".$i."'>".$key."</item>";
             ++$i;
         }
@@ -109,12 +109,12 @@ class OpenSRS
 
         $int = 0;
         foreach ( $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'] as $key => $item ) {
-          if ( $item['@']['key'] == 'attributes' ) {
-              $int = $key;
-          }
+            if ( $item['@']['key'] == 'attributes' ) {
+                $int = $key;
+            }
         }
         if ( $int == 0 ) {
-          return null;
+            return null;
         }
 
         // Get the response
@@ -126,21 +126,46 @@ class OpenSRS
         }
 
         $finalArray = array();
-        $finalArray['status'] = array("response_text" => $response[1]['#'], "response_code" => $response[2]['#']);
+
+        foreach ($response as $key => $item) {
+            if ( $item['@']['key'] == 'response_text' ) {
+                $responseId = $key;
+            }
+            if ( $item['@']['key'] == 'response_code' ) {
+                $responseCodeId = $key;
+            }
+        }
+        $finalArray['status'] = array("response_text" => $response[$responseId]['#'], "response_code" => $response[$responseCodeId]['#']);
+
+        foreach ( $response as $key => $item ) {
+            if ($item['@']['key'] == 'items' ) {
+                $lookUpKey = $key;
+            }
+        }
 
         // Loop it
-        foreach ($response[3]['#']['dt_array'][0]['#']['item'] AS $key) {
+        foreach ($response[$lookUpKey]['#']['dt_array'][0]['#']['item'] AS $key) {
 
             // Make a working array
             $workingArray = array();
             $key = $key['#']['dt_assoc'][0]['#']['item'];
 
+            foreach ( $key as $innerKey => $item ) {
+                if ($item['@']['key'] == 'status' ) {
+                    $statusKeyId = $innerKey;
+                }
+
+                if ($item['@']['key'] == 'domain' ) {
+                    $domainKeyId = $innerKey;
+                }
+            }
+
             // Add the domain
-            $workingArray['domain'] = $key[0]['#'];
+            $workingArray['domain'] = $key[$domainKeyId]['#'];
 
             // Explode the domain into parts
             $domainExplode = @explode(".", $workingArray['domain']);
-            if(@$domainExplode[2]) {
+            if (@$domainExplode[2]) {
                 $workingArray['tld'] = $domainExplode[1].".".$domainExplode[2];
             } else {
                 $workingArray['tld'] = $domainExplode[1];
@@ -148,24 +173,24 @@ class OpenSRS
 
             $workingArray['sld'] = $domainExplode[0];
 
-            // Validate the SLD because oPenSRS returns duplicate domains with -'s taken out.
-            if($workingArray['sld'] != $domain) {
+            // Validate the SLD because OpenSRS returns duplicate domains with -'s taken out.
+            if ($workingArray['sld'] != $domain) {
                 continue;
             }
 
             // Re-work the status
-            if($key[1]['#'] == 'available') {
+            if ($key[$statusKeyId]['#'] == 'available') {
                 $domainStatus = 0;
             } else {
                 $domainStatus = 1;
             }
 
             $workingArray['status'] = $domainStatus;
-
             $workingArray['domain'] = $workingArray['sld'];
+
             $finalArray['result'][] = $workingArray;
         }
-        //return the final array of checked domains
+
         return $finalArray;
     }
 
@@ -250,7 +275,6 @@ class OpenSRS
                             <item key='org_name'>".htmlentities($params['RegistrantOrganizationName'])."</item>
                             <item key='lang_pref'>".$params['RegistrantLanguage']."</item>
                            </dt_assoc>";
-
 
         $request = "
             <data_block>
@@ -466,7 +490,7 @@ class OpenSRS
     {
 
         // Fix to stop null $autorenew values
-        if($autorenew == null) {
+        if ($autorenew == null) {
             $autorenew = 0;
         }
 
@@ -504,7 +528,7 @@ class OpenSRS
 
         // Process the response
         $finalArray = array();
-        if(isset($response[4]['#'])) {
+        if (isset($response[4]['#'])) {
             // Success
             $finalArray['status'] = array("response_text" => $response[1]['#'], "response_code" => $response[4]['#']);
         } else {
@@ -537,8 +561,6 @@ class OpenSRS
 
         // Send the request to OpenSRS
         $response = $this->_buildAndSendRequest($request);
-
-
 
         // Check the response
         if ($response == null) {
@@ -575,8 +597,6 @@ class OpenSRS
 
         // Send the request to OpenSRS
         $response = $this->_buildAndSendRequest($request);
-
-
 
         // Check the response
         if ($response == null) {
@@ -652,8 +672,6 @@ class OpenSRS
         // Send the request to OpenSRS
         $response = $this->_buildAndSendRequest($request);
 
-
-
         // Check the response
         if ($response == null) {
             return null;
@@ -664,9 +682,18 @@ class OpenSRS
 
         // Get the first part of the response
         $response = $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
-        // Process the response
-        $finalArray = array();
-        $finalArray['status'] = array("response_text" => $response[2]['#'], "response_code" => $response[5]['#']);
+        $finalArray = [];
+        foreach ($response as $key => $value) {
+          if ( $value['@']['key'] == 'response_text') {
+            $responseTextId = $key;
+          } else if ( $value['@']['key'] == 'response_code') {
+            $responseCodeId = $key;
+          }
+        }
+        $finalArray['status'] = [
+          "response_text" => $response[$responseTextId]['#'],
+          "response_code" => $response[$responseCodeId]['#']
+        ];
 
         if ( $response[4]['#'] == 'Authentication Error.' ) {
             // This function is called and sometime causes errors when viewing a domain, but we do not want to throw an exception each time.
@@ -676,8 +703,12 @@ class OpenSRS
 
         if ( $type == 'nameserver' ) {
             $nameservers = array();
-            $response = $response[4]['#']['dt_assoc'][0]['#']['item'];
-
+            foreach ($response as $key => $value) {
+              if ( $value['@']['key'] == 'attributes') {
+                $attributesId = $key;
+              }
+            }
+            $response = $response[$attributesId]['#']['dt_assoc'][0]['#']['item'];
             foreach ( $response as $key => $value ) {
                 if ( $value['@']['key'] == 'nameserver_list') {
                     $nameServerId = $key;
@@ -685,22 +716,27 @@ class OpenSRS
             }
 
             foreach ( $response[$nameServerId]['#']['dt_array'][0]['#']['item'] as $item ) {
-                $nameservers[] = $item['#']['dt_assoc'][0]['#']['item'][0]['#'];
+              foreach ($item['#']['dt_assoc'][0]['#']['item'] as $key => $value) {
+                if ( $value['@']['key'] == 'name') {
+                  $nameId = $key;
+                }
+              }
+              $nameservers[] = $item['#']['dt_assoc'][0]['#']['item'][$nameId]['#'];
             }
             return $nameservers;
 
-        // Determine what we are outputting
-        } else if($type == 'general') {
+            // Determine what we are outputting
+        } elseif ($type == 'general') {
             $attributesKey = 0;
             foreach ( $response as $key => $tempResponse ) {
-              if ( $tempResponse['@']['key'] == 'attributes' ) {
-                $attributesKey = $key;
-              }
+                if ( $tempResponse['@']['key'] == 'attributes' ) {
+                    $attributesKey = $key;
+                }
             }
             // Set the next block of the response
             $response = $response[$attributesKey]['#']['dt_assoc'][0]['#']['item'];
 
-             foreach ( $response as $key => $value ) {
+            foreach ( $response as $key => $value ) {
                 if ( $value['@']['key'] == 'auto_renew') {
                     $autoRenewId = $key;
                 }
@@ -717,54 +753,77 @@ class OpenSRS
                                                'registry_createdate' => $response[$createDateId]['#'],
                                                'registry_expiredate' => $response[$expireDateId]['#']);
 
-        } elseif($type == 'contact') {
+        } elseif ($type == 'contact') {
 
-            // Set the next block of the response
-            $response = $response[4]['#']['dt_assoc'][0]['#']['item'][1]['#']['dt_assoc'][0]['#']['item'];
+            foreach ( $response as $key => $tempResponse ) {
+                if ( $tempResponse['@']['key'] == 'attributes' ) {
+                    $attributesKey = $key;
+                }
+            }
 
-            $i = 0;
-            $info = array();
-            foreach (array('Admin', 'Registrant', 'Tech', 'Billing') as $type) {
+            $response = $response[$attributesKey]['#']['dt_assoc'][0]['#']['item'];
+            foreach ( $response as $key => $value ) {
+                if ( $value['@']['key'] == 'contact_set') {
+                    $contactSetId = $key;
+                }
+            }
 
-                $data =  $response[$i]['#']['dt_assoc'][0]['#']['item'];
-                if (is_array($data)) {
-                    $info[$type]['OrganizationName']  = array('Organization', $data[2]['#']);
-                    $info[$type]['JobTitle']  = array('Job Title', '');
-                    $info[$type]['FirstName'] = array('First Name', $data[12]['#']);
-                    $info[$type]['LastName']  = array('Last Name', $data[5]['#']);
-                    $info[$type]['Address1']  = array('Address 1', $data[11]['#']);
-                    $info[$type]['Address2']  = array('Address 2', $data[6]['#']);
-                    $info[$type]['City']      = array('City', $data[8]['#']);
-                    $info[$type]['StateProvChoice']  = array('State or Province', '');
-                    $info[$type]['StateProv']  = array('Province / State', $data[4]['#']);
-                    $info[$type]['Country']   = array('Country', $data[0]['#']);
-                    $info[$type]['PostalCode']  = array('Postal Code', $data[9]['#']);
-                    $info[$type]['EmailAddress']     = array('E-mail', $data[7]['#']);
-                    $info[$type]['Phone']  = array('Phone', $data[3]['#']);
-                    $info[$type]['PhoneExt']  = array('Phone Ext', '');
-                    $info[$type]['Fax']       = array('Fax', $data[10]['#']);
-                } else {
-                    $info[$type] = array(
-                        'OrganizationName'  => array($this->user->lang('Organization'), ''),
-                        'JobTitle'          => array($this->user->lang('Job Title'), ''),
-                        'FirstName'         => array($this->user->lang('First Name'), ''),
-                        'LastName'          => array($this->user->lang('Last Name'), ''),
-                        'Address1'          => array($this->user->lang('Address').' 1', ''),
-                        'Address2'          => array($this->user->lang('Address').' 2', ''),
-                        'City'              => array($this->user->lang('City'), ''),
-                        'StateProvChoice'   => array($this->user->lang('State or Province'), ''),
-                        'StateProv'         => array($this->user->lang('Province').'/'.$this->user->lang('State'), ''),
-                        'Country'           => array($this->user->lang('Country'), ''),
-                        'PostalCode'        => array($this->user->lang('Postal Code'), ''),
-                        'EmailAddress'      => array($this->user->lang('E-mail'), ''),
-                        'Phone'             => array($this->user->lang('Phone'), ''),
-                        'PhoneExt'          => array($this->user->lang('Phone Ext'), ''),
-                        'Fax'               => array($this->user->lang('Fax'), ''),
-                    );
+            $response = $response[$contactSetId]['#']['dt_assoc'][0]['#']['item'][1]['#']['dt_assoc'][0]['#']['item'];
+            foreach ( $response as $key => $value ) {
+
+                if ( $value['@']['key'] == 'country') {
+                    $country = $value['#'];
                 }
 
+                if ( $value['@']['key'] == 'address1') {
+                    $address1 = $value['#'];
+                }
+                if ( $value['@']['key'] == 'org_name') {
+                    $orgName = $value['#'];
+                }
+                if ( $value['@']['key'] == 'address2') {
+                    $address2 = $value['#'];
+                }
+                if ( $value['@']['key'] == 'email') {
+                    $email = $value['#'];
+                }
+                if ( $value['@']['key'] == 'state') {
+                    $state = $value['#'];
+                }
+                if ( $value['@']['key'] == 'city') {
+                    $city = $value['#'];
+                }
+                if ( $value['@']['key'] == 'first_name') {
+                    $firstName = $value['#'];
+                }
+                if ( $value['@']['key'] == 'last_name') {
+                    $lastName = $value['#'];
+                }
+                if ( $value['@']['key'] == 'phone') {
+                    $phone = $value['#'];
+                }
+                if ( $value['@']['key'] == 'postal_code') {
+                    $postCode = $value['#'];
+                }
+                if ( $value['@']['key'] == 'fax') {
+                    $fax = $value['#'];
+                }
+            }
 
-                ++$i;
+            $info = array();
+            foreach (array('Admin', 'Registrant', 'Tech', 'Billing') as $type) {
+                $info[$type]['OrganizationName']  = array('Organization', $orgName);
+                $info[$type]['FirstName'] = array('First Name', $firstName);
+                $info[$type]['LastName']  = array('Last Name', $lastName);
+                $info[$type]['Address1']  = array('Address 1', $address1);
+                $info[$type]['Address2']  = array('Address 2', $address2);
+                $info[$type]['City']      = array('City', $city);
+                $info[$type]['StateProv']  = array('Province / State', $state);
+                $info[$type]['Country']   = array('Country', $country);
+                $info[$type]['PostalCode']  = array('Postal Code', $postCode);
+                $info[$type]['EmailAddress']     = array('E-mail', $email);
+                $info[$type]['Phone']  = array('Phone', $phone);
+                $info[$type]['Fax']       = array('Fax', $fax);
             }
 
             // Have to return here as the classes dont support status
@@ -819,13 +878,15 @@ class OpenSRS
         // Get the first part of the response
         $response = @$response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
 
+        $domainNameGateway = new DomainNameGateway();
+
         $domainsList = array();
         if (@$response[4]['#']['dt_assoc'][0]['#']['item'][3]['#'] > 0) {
             $i = 0;
             foreach ($response[4]['#']['dt_assoc'][0]['#']['item'][0]['#']['dt_array'][0]['#']['item'] as $domain) {
                 $domain = $domain['#']['dt_assoc'][0]['#']['item'];
 
-                $splitDomain = $this->splitDomain($domain[1]['#']);
+                $splitDomain = $domainNameGateway->splitDomain($domain[1]['#']);
 
                 $data['id'] = ++$i;
                 $data['sld'] = $splitDomain[0];
@@ -852,7 +913,8 @@ class OpenSRS
      * @return an xmlized array result - use print_r() to view the structure
      */
 
-    function get_cookie($params) {
+    function get_cookie($params)
+    {
 
         // Build the request
         $request = "<data_block>
@@ -885,7 +947,7 @@ class OpenSRS
         $response = $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
 
         // Check the response code
-        if(@$response[4]['#'] == '415') {
+        if (@$response[4]['#'] == '415') {
 
             // Throw error
             throw new Exception("OpenSRS API Error: Unable to authenticate using the Domain Username & Password.");
@@ -925,7 +987,6 @@ class OpenSRS
                 </item>
             </dt_assoc>
         </data_block>";
-
 
         $response = $this->_buildAndSendRequest($request);
 
@@ -998,7 +1059,6 @@ class OpenSRS
                       </dt_assoc>
                     </data_block>";
 
-
         $response = $this->_buildAndSendRequest($request);
 
         // Check the response
@@ -1037,54 +1097,28 @@ class OpenSRS
         $signature = md5(md5($request.$this->key).$this->key);
 
         // Contruct the headers
-        $header = "POST ".$this->host." HTTP/1.0\r\n";
-        $header .= "Content-Type: text/xml\r\n";
-        $header .= "X-Username: " . $this->username . "\r\n";
-        $header .= "X-Signature: " . $signature . "\r\n";
-        $header .= "Content-Length: " . strlen($request) . "\r\n\r\n";
+        $header = [
+          'Content-Type: text/xml',
+          'X-Username: ' . $this->username,
+          'X-Signature: ' . $signature
+        ];
 
-        // Open the connection
-        $fp = @fsockopen ("ssl://$this->host", $this->port, $errno, $errstr, 30);
-        if (!$fp) {
+        $ch = curl_init("https://{$this->host}:{$this->port}");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
+        $response = curl_exec($ch);
+
+        if ($errno = curl_errno($ch)) {
+            $errstr = curl_strerror($errno);
             CE_Lib::log(4, "Couldn't connect to OpenSRS: $errno, $errstr");
             throw new CE_Exception("OpenSRS API Error: Unable to communicate with OpenSRS: $errstr", EXCEPTION_CODE_CONNECTION_ISSUE);
         }
 
-        // Send the request
-        fputs ($fp, $header . $request);
-        $response = "";
-
-        // Gather the reply
-        while (!feof($fp))
-        {
-            $response .= fgets ($fp, 1024);
-        }
-
-        // Close the file
-        fclose($fp);
-
         // Log the reply
         CE_Lib::log(4, "OpenSRS response: " . $response);
 
-        // drop the headers so we can xmlize it
-        $arrResponse = explode("\n", $response);
-        $response = "";
-        $flag = false;
-        foreach ($arrResponse as $line)
-        {
-            if ($flag) $response .= $line."\n";
-            else if (trim($line) == "") $flag = true;
-        }
-
-        // Return the final reply
         return $response;
-    }
-
-    function splitDomain($domain)
-    {
-        if (($position = strpos($domain, '.')) === false) {
-            return array($domain, '');
-        }
-        return array(mb_substr($domain, 0, $position), mb_substr($domain, $position + 1));
     }
 }
