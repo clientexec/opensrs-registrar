@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenSRS Domain Registrar Plugin
  *
@@ -11,7 +12,7 @@
  */
 
 require_once 'modules/admin/models/RegistrarPlugin.php';
-require_once dirname(__FILE__).'/class.opensrs.php';
+require_once dirname(__FILE__) . '/class.opensrs.php';
 
 /**
  * PluginOpensrs RegistrarPlugin Class
@@ -34,26 +35,26 @@ class PluginOpensrs extends RegistrarPlugin
         'importPrices' => false,
     ];
 
-    var $liveHost = "rr-n1-tor.opensrs.net";
-    var $testHost = "horizon.opensrs.net";
-    var $connPort = "55443";
+    private $liveHost = "rr-n1-tor.opensrs.net";
+    private $testHost = "horizon.opensrs.net";
+    private $connPort = "55443";
 
     /**
      * Function to return a list of configurable variables for the class
      *
      * @return array
      */
-    function getVariables()
+    public function getVariables()
     {
         $variables = array(
                 lang('Plugin Name') => array (
-                        'type'          =>'hidden',
-                        'description'   =>lang('How CE sees this plugin (not to be confused with the Signup Name)'),
-                        'value'         =>lang('OpenSRS')
+                        'type'          => 'hidden',
+                        'description'   => lang('How CE sees this plugin (not to be confused with the Signup Name)'),
+                        'value'         => lang('OpenSRS')
                 ),
                 lang('Use testing server') => array(
-                        'type'          =>'yesno',
-                        'description'   =>lang('Select Yes if you wish to use OpenSRS\'s testing environment, so that transactions are not actually made.'),
+                        'type'          => 'yesno',
+                        'description'   => lang('Select Yes if you wish to use OpenSRS\'s testing environment, so that transactions are not actually made.'),
                         'value'         => 0
                 ),
                 lang('Username') => array(
@@ -68,7 +69,7 @@ class PluginOpensrs extends RegistrarPlugin
                 ),
                 lang('Supported Features')  => array(
                         'type'          => 'label',
-                        'description'   => '* '.lang('TLD Lookup, with Name Suggestions').'<br>* '.lang('Domain Registration').' <br>* '.lang('Domain Registration with ID Protect').' <br>* '.lang('Existing Domain Importing').' <br>* '.lang('Get / Set Auto Renew Status').' <br>* '.lang('Get / Set Nameserver Records').' <br>* '.lang('Get / Set Contact Information').' <br>* '.lang('Get / Set Registrar Lock').' <br>* '.lang('Initiate Domain Transfer').' <br>* '.lang('Automatically Renew Domain').' <br>',
+                        'description'   => '* ' . lang('TLD Lookup, with Name Suggestions') . '<br>* ' . lang('Domain Registration') . ' <br>* ' . lang('Domain Registration with ID Protect') . ' <br>* ' . lang('Existing Domain Importing') . ' <br>* ' . lang('Get / Set Auto Renew Status') . ' <br>* ' . lang('Get / Set Nameserver Records') . ' <br>* ' . lang('Get / Set Contact Information') . ' <br>* ' . lang('Get / Set Registrar Lock') . ' <br>* ' . lang('Initiate Domain Transfer') . ' <br>* ' . lang('Automatically Renew Domain') . ' <br>',
                         'value'         => ''
                 ),
                lang('Actions') => array (
@@ -98,10 +99,10 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @return array
      */
-    function checkDomain($params)
+    public function checkDomain($params)
     {
         // Calculate the host
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ? $this->testHost : $this->liveHost;
 
         CE_Lib::log(4, "Using $host");
 
@@ -115,18 +116,19 @@ class PluginOpensrs extends RegistrarPlugin
         }
 
         // Perform the lookup
-        $return = $opensrs->lookup_domain(strtolower($params['sld']), strtolower($params['tld']), $params['namesuggest']);
+        $return = $opensrs->lookupDomain(strtolower($params['sld']), strtolower($params['tld']), $params['namesuggest']);
 
         // Check the reply
         if ($return == null) {
+            CE_Lib::log(4, 'Return is null');
             CE_Lib::log(1, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
             throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
         }
 
         // Check we had a succcess code
         if ($return['status']['response_code'] != 200) {
-            CE_Lib::log(1, "OpenSRS Lookup Failed: ".$return['status']['response_text']);
-            throw new Exception("OpenSRS Lookup Failed: ".$return['status']['response_text']);
+            CE_Lib::log(1, "OpenSRS Lookup Failed: " . $return['status']['response_text']);
+            throw new Exception("OpenSRS Lookup Failed: " . $return['status']['response_text']);
         }
         unset($return['status']);
         //TODO we need to ensure that this is the array returned by checkDomain
@@ -144,11 +146,11 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @param array $params
      */
-    function doRenew($params)
+    public function doRenew($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
         $orderid = $this->renewDomain($this->buildRenewParams($userPackage, $params));
-        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar").'-'.$orderid);
+        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar") . '-' . $orderid);
         return $userPackage->getCustomField('Domain Name') . ' has been renewed.';
     }
 
@@ -157,16 +159,16 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @param array $params
      */
-    function doDomainTransfer($params)
+    public function doDomainTransfer($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
         $transferid = $this->initiateTransfer($this->buildTransferParams($userPackage, $params));
-        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar").'-'.$transferid);
+        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar") . '-' . $transferid);
         $userPackage->setCustomField('Transfer Status', $transferid);
         return "Transfer of has been initiated.";
     }
 
-    function getTransferStatus($params)
+    public function getTransferStatus($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
         if ($params['Use testing server']) {
@@ -175,7 +177,7 @@ class PluginOpensrs extends RegistrarPlugin
             $host = 'rr-n1-tor.opensrs.net';
         }
 
-        $params['domain'] = strtolower($params['sld'].".".$params['tld']);
+        $params['domain'] = strtolower($params['sld'] . "." . $params['tld']);
         $opensrs = new OpenSRS(
             $host,
             $this->connPort,
@@ -184,7 +186,7 @@ class PluginOpensrs extends RegistrarPlugin
             $this->user
         );
 
-        $return = $opensrs->check_transfer_status($params);
+        $return = $opensrs->checkTransferStatus($params);
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
@@ -205,7 +207,7 @@ class PluginOpensrs extends RegistrarPlugin
             }
         }
 
-        CE_Lib::log(4, "OpenSRS Transfer Status Response: ".$return[$status_text]['#']);
+        CE_Lib::log(4, "OpenSRS Transfer Status Response: " . $return[$status_text]['#']);
 
         // XXX: Get the status, check if it's transfered successfully, return status as needed.
         // Awaiting on OpenSRS for now.
@@ -230,11 +232,11 @@ class PluginOpensrs extends RegistrarPlugin
             return $transfer_status;
         }
 
-        throw new CE_Exception("Getting Domain Transfer Status Failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
+        throw new CE_Exception("Getting Domain Transfer Status Failed: " . $return[$status_text]['#'] . " " . @$attributes[0]['#']);
     }
 
 
-    function initiateTransfer($params)
+    public function initiateTransfer($params)
     {
         if ($params['Use testing server']) {
             $host = 'horizon.opensrs.net';
@@ -242,10 +244,10 @@ class PluginOpensrs extends RegistrarPlugin
             $host = 'rr-n1-tor.opensrs.net';
         }
 
-        $params['domain'] = strtolower($params['sld'].".".$params['tld']);
-        $params['RegistrantPhone'] = $this->_plugin_opensrs_validatePhone($params['RegistrantPhone'], $params['RegistrantCountry']);
+        $params['domain'] = strtolower($params['sld'] . "." . $params['tld']);
+        $params['RegistrantPhone'] = $this->validatePhone($params['RegistrantPhone'], $params['RegistrantCountry']);
         if ($params['RegistrantOrganizationName'] == "") {
-            $params['RegistrantOrganizationName'] = $params['RegistrantFirstName']." ".$params['RegistrantLastName'];
+            $params['RegistrantOrganizationName'] = $params['RegistrantFirstName'] . " " . $params['RegistrantLastName'];
         }
 
         /* Grab some information that isn't passed by default */
@@ -275,7 +277,7 @@ class PluginOpensrs extends RegistrarPlugin
             $this->user
         );
 
-        $return = $opensrs->initiate_transfer($params);
+        $return = $opensrs->initiateTransfer($params);
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
@@ -296,7 +298,7 @@ class PluginOpensrs extends RegistrarPlugin
             }
         }
 
-        CE_Lib::log(4, "OpenSRS Transfer Response: ".$return[$status_text]['#']);
+        CE_Lib::log(4, "OpenSRS Transfer Response: " . $return[$status_text]['#']);
 
         if (isset($attributes_key)) {
             $attributes = $return[$attributes_key]['#']['dt_assoc'][0]['#']['item'];
@@ -314,7 +316,7 @@ class PluginOpensrs extends RegistrarPlugin
             return $transferId;
         }
 
-        throw new CE_Exception("Starting Domain Transfer Failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
+        throw new CE_Exception("Starting Domain Transfer Failed: " . $return[$status_text]['#'] . " " . @$attributes[0]['#']);
     }
 
 
@@ -323,11 +325,11 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @param array $params
      */
-    function doRegister($params)
+    public function doRegister($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
         $orderid = $this->registerDomain($this->buildRegisterParams($userPackage, $params));
-        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar").'-'.$orderid);
+        $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar") . '-' . $orderid);
         return $userPackage->getCustomField('Domain Name') . ' has been registered.';
     }
 
@@ -336,7 +338,7 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @return array
      */
-    function renewDomain($params)
+    public function renewDomain($params)
     {
         if ($params['Use testing server']) {
             $host = 'horizon.opensrs.net';
@@ -367,12 +369,12 @@ class PluginOpensrs extends RegistrarPlugin
                 $params['renewname'] = 1;
             }
         } catch (Exception $ex) {
-            throw new CE_Exception("Domain renewal failed: ".$ex->getMessage());
+            throw new CE_Exception("Domain renewal failed: " . $ex->getMessage());
         }
 
-        $params['domain'] = strtolower($params['sld'].".".$params['tld']);
+        $params['domain'] = strtolower($params['sld'] . "." . $params['tld']);
 
-        $return = $opensrs->renew_domain($params);
+        $return = $opensrs->renewDomain($params);
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
@@ -393,7 +395,7 @@ class PluginOpensrs extends RegistrarPlugin
             }
         }
 
-        CE_Lib::log(4, "OpenSRS Registration Response: ".$return[$status_text]['#']);
+        CE_Lib::log(4, "OpenSRS Registration Response: " . $return[$status_text]['#']);
 
         if (isset($attributes_key)) {
             if (isset($return[$attributes_key]) && isset($return[$attributes_key]['#']['dt_assoc'][0]['#']['item'])) {
@@ -419,7 +421,7 @@ class PluginOpensrs extends RegistrarPlugin
         }
         // Something went very wrong
 
-        throw new CE_Exception("Domain renewal failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
+        throw new CE_Exception("Domain renewal failed: " . $return[$status_text]['#'] . " " . @$attributes[0]['#']);
     }
 
     /**
@@ -427,15 +429,16 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @return array
      */
-    function registerDomain($params)
+    public function registerDomain($params)
     {
         if ($params['Use testing server']) {
             $host = 'horizon.opensrs.net';
-            $params['NS1']['hostname'] = "default.opensrs.org";
-            $params['NS2']['hostname'] = "default1.opensrs.org";
+            $params['NS1']['hostname'] = "ns1.systemdns.com";
+            $params['NS2']['hostname'] = "ns2.systemdns.com";
+            $params['NS3']['hostname'] = "ns3.systemdns.com";
             $params['Custom NS'] = 1;
             for ($i = 3; $i <= 12; $i++) {
-                unset($params['NS'.$i]);
+                unset($params['NS' . $i]);
             }
         } else {
             $host = 'rr-n1-tor.opensrs.net';
@@ -459,10 +462,10 @@ class PluginOpensrs extends RegistrarPlugin
         );
 
 
-        $params['domain'] = strtolower($params['sld'].".".$params['tld']);
-        $params['RegistrantPhone'] = $this->_plugin_opensrs_validatePhone($params['RegistrantPhone'], $params['RegistrantCountry']);
+        $params['domain'] = strtolower($params['sld'] . "." . $params['tld']);
+        $params['RegistrantPhone'] = $this->validatePhone($params['RegistrantPhone'], $params['RegistrantCountry']);
         if ($params['RegistrantOrganizationName'] == "") {
-            $params['RegistrantOrganizationName'] = $params['RegistrantFirstName']." ".$params['RegistrantLastName'];
+            $params['RegistrantOrganizationName'] = $params['RegistrantFirstName'] . " " . $params['RegistrantLastName'];
         }
 
         // Process the extended attributes
@@ -491,7 +494,7 @@ class PluginOpensrs extends RegistrarPlugin
         }
 
 
-        $return = $opensrs->register_domain($params);
+        $return = $opensrs->registerDomain($params);
 
         //print_r($return);
 
@@ -514,7 +517,7 @@ class PluginOpensrs extends RegistrarPlugin
             }
         }
 
-        CE_Lib::log(4, "OpenSRS Registration Response: ".$return[$status_text]['#']);
+        CE_Lib::log(4, "OpenSRS Registration Response: " . $return[$status_text]['#']);
 
         if (isset($attributes_key)) {
             $attributes = $return[$attributes_key]['#']['dt_assoc'][0]['#']['item'];
@@ -531,7 +534,7 @@ class PluginOpensrs extends RegistrarPlugin
             // Registration was fine
             // Check about private registration
             if (isset($params['package_addons']['IDPROTECT']) && $params['package_addons']['IDPROTECT'] == 1) {
-                $return = $opensrs->enable_whois_privacy($params);
+                $return = $opensrs->enableWhoisPrivacy($params);
                 if ($return == null) {
                     CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
                     throw new CE_Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
@@ -546,10 +549,10 @@ class PluginOpensrs extends RegistrarPlugin
         }
         // Something went very wrong
 
-        throw new CE_Exception("Domain registration failed: ".$return[$status_text]['#']." ".@$attributes[0]['#']);
+        throw new CE_Exception("Domain registration failed: " . $return[$status_text]['#'] . " " . @$attributes[0]['#']);
     }
 
-    function disablePrivateRegistration($parmas)
+    public function disablePrivateRegistration($parmas)
     {
         throw new MethodNotImplemented('Method disablePrivateRegistration has not been implemented.');
     }
@@ -562,12 +565,12 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @return array
      */
-    function setAutorenew($params)
+    public function setAutorenew($params)
     {
         //$userPackage = $params['userPackage'];
 
         // Calculate the host
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
 
         // Start the connection
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
@@ -580,12 +583,12 @@ class PluginOpensrs extends RegistrarPlugin
         //$cookie = $opensrs->get_cookie($params);
 
         // Run the command
-        $return = $opensrs->set_autorenew(strtolower($params['sld']), strtolower($params['tld']), $params['autorenew']);
+        $return = $opensrs->setAutorenew(strtolower($params['sld']), strtolower($params['tld']), $params['autorenew']);
 
         // Check for an error
         if ($return['status']['response_code'] != 200) {
-            CE_Lib::log(4, "OpenSRS API Call Failed: ".$return['status']['response_text']);
-            throw new CE_Exception("Setting Autorenew Failed: ".$return['status']['response_text']);
+            CE_Lib::log(4, "OpenSRS API Call Failed: " . $return['status']['response_text']);
+            throw new CE_Exception("Setting Autorenew Failed: " . $return['status']['response_text']);
         }
     }
 
@@ -596,16 +599,16 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @return array
      */
-    function getGeneralInfo($params)
+    public function getGeneralInfo($params)
     {
         // Calculate the host
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
 
         // Start the connection
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
 
         // Get the domain info
-        $return = $opensrs->get_domain_info(strtolower($params['sld']), strtolower($params['tld']), 'general');
+        $return = $opensrs->getDomainInfo(strtolower($params['sld']), strtolower($params['tld']), 'general');
 
         if ($return == null) {
             // This function can break some domains in admin panel. For example, transfer's that aren't yet in the account.
@@ -615,17 +618,17 @@ class PluginOpensrs extends RegistrarPlugin
 
         // Check for an error
         if ($return['status']['response_code'] != 200) {
-            CE_Lib::log(4, "OpenSRS API Call Failed: ".$return['status']['response_text']);
-            throw new Exception("OpenSRS API Error - getGeneralInfo: ".$return['status']['response_text']);
+            CE_Lib::log(4, "OpenSRS API Call Failed: " . $return['status']['response_text']);
+            throw new Exception("OpenSRS API Error - getGeneralInfo: " . $return['status']['response_text']);
         }
 
         // Build the standard CE response
         $data = array();
         $data['id'] = -1;
-        $data['domain'] = strtolower($params['sld']).".".strtolower($params['tld']);
+        $data['domain'] = strtolower($params['sld']) . "." . strtolower($params['tld']);
         $data['expiration'] = $return['generalInfo']['registry_expiredate'];
         $data['registrationstatus'] = 'Registered';
-        $data['purchasestatus'] = 'Purchased on '.$return['generalInfo']['registry_createdate'];
+        $data['purchasestatus'] = 'Purchased on ' . $return['generalInfo']['registry_createdate'];
         $data['autorenew'] = $return['generalInfo']['auto_renew'];
 
         return $data;
@@ -636,22 +639,22 @@ class PluginOpensrs extends RegistrarPlugin
      * Function to import domains from OpenSRS
      * @param <type> $params
      */
-    function fetchDomains($params)
+    public function fetchDomains($params)
     {
 
         // Calculate the host
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
 
         // Start the connection
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
 
-        $return = $opensrs->get_domains_list($params['next']);
+        $return = $opensrs->getDomainsList($params['next']);
 
         return $return;
     }
 
     // @access private
-    function _plugin_opensrs_validatePhone($phone, $country)
+    public function validatePhone($phone, $country)
     {
         // strip all non numerical values
         $phone = preg_replace('/[^\d]/', '', $phone);
@@ -673,38 +676,38 @@ class PluginOpensrs extends RegistrarPlugin
         return "+$code.$phone";
     }
 
-    function getContactInformation($params)
+    public function getContactInformation($params)
     {
         // Calculate the host
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
 
         // Start the connection
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
 
         // Get the domain info
-        $return = $opensrs->get_domain_info(strtolower($params['sld']), strtolower($params['tld']), 'contact');
+        $return = $opensrs->getDomainInfo(strtolower($params['sld']), strtolower($params['tld']), 'contact');
 
         return $return;
     }
 
-    function setContactInformation($params)
+    public function setContactInformation($params)
     {
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
 
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
-        $opensrs->update_contact($params);
+        $opensrs->updateContact($params);
     }
 
-    function getNameServers($params)
+    public function getNameServers($params)
     {
         // Calculate the host
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
 
         // Start the connection
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
 
         // Get the domain info
-        $return = $opensrs->get_domain_info(strtolower($params['sld']), strtolower($params['tld']), 'nameserver');
+        $return = $opensrs->getDomainInfo(strtolower($params['sld']), strtolower($params['tld']), 'nameserver');
 
         $return['usesDefault'] = false;
         $return['hasDefault'] = false;
@@ -712,16 +715,16 @@ class PluginOpensrs extends RegistrarPlugin
         return $return;
     }
 
-    function setNameServers($params)
+    public function setNameServers($params)
     {
         // Calculate the host
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
 
         // Start the connection
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
 
         // Get the domain info
-        $return = $opensrs->set_nameservers($params);
+        $return = $opensrs->setNameservers($params);
 
         foreach ($return as $key => $val) {
             if ($val['@']['key'] == 'response_code') {
@@ -738,7 +741,7 @@ class PluginOpensrs extends RegistrarPlugin
             }
         }
 
-        CE_Lib::log(4, "OpenSRS SetNameServers Response: ".$return[$status_text]['#']);
+        CE_Lib::log(4, "OpenSRS SetNameServers Response: " . $return[$status_text]['#']);
         if (isset($return[$success_key]['#']) && $return[$success_key]['#']  == 1) {
             return;
         } else {
@@ -746,32 +749,32 @@ class PluginOpensrs extends RegistrarPlugin
         }
     }
 
-    function checkNSStatus($params)
+    public function checkNSStatus($params)
     {
         throw new Exception('Method checkNSStatus() has not been implemented yet.');
     }
 
-    function registerNS($params)
+    public function registerNS($params)
     {
         throw new Exception('Method registerNS() has not been implemented yet.');
     }
 
-    function editNS($params)
+    public function editNS($params)
     {
         throw new Exception('Method editNS() has not been implemented yet.');
     }
 
-    function deleteNS($params)
+    public function deleteNS($params)
     {
         throw new Exception('Method deleteNS() has not been implemented yet.');
     }
 
-    function getRegistrarLock($params)
+    public function getRegistrarLock($params)
     {
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
 
-        $return = $opensrs->get_lock(strtolower($params['sld']), strtolower($params['tld']));
+        $return = $opensrs->getLock(strtolower($params['sld']), strtolower($params['tld']));
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
@@ -810,19 +813,19 @@ class PluginOpensrs extends RegistrarPlugin
         throw new CE_Exception("Could not determine lock state.");
     }
 
-    function doSetRegistrarLock($params)
+    public function doSetRegistrarLock($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
         $this->setRegistrarLock($this->buildLockParams($userPackage, $params));
         return "Updated Registrar Lock.";
     }
 
-    function setRegistrarLock($params)
+    public function setRegistrarLock($params)
     {
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
 
-        $return = $opensrs->set_lock(strtolower($params['sld']), strtolower($params['tld']), $params['lock']);
+        $return = $opensrs->setLock(strtolower($params['sld']), strtolower($params['tld']), $params['lock']);
 
         if ($return == null) {
             CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
@@ -830,25 +833,98 @@ class PluginOpensrs extends RegistrarPlugin
         }
     }
 
-    function doSendTransferKey($params)
+    public function doSendTransferKey($params)
     {
         $userPackage = new UserPackage($params['userPackageId']);
         $this->sendTransferKey($this->buildRegisterParams($userPackage, $params));
         return 'Successfully sent auth info for ' . $userPackage->getCustomField('Domain Name');
     }
 
-    function sendTransferKey($params)
+    public function sendTransferKey($params)
     {
-        $host = ($params['Use testing server'])? $this->testHost:$this->liveHost;
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
         $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
-        $opensrs->send_authcode(strtolower($params['sld']), strtolower($params['tld']));
+        $opensrs->sendAuthcode(strtolower($params['sld']), strtolower($params['tld']));
     }
-    function getDNS($params)
+    public function getDNS($params)
     {
-        throw new CE_Exception('Getting DNS Records is not supported in this plugin.', EXCEPTION_CODE_NO_EMAIL);
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
+        $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
+        $response = $opensrs->getDNSRecords(strtolower($params['sld']), strtolower($params['tld']));
+        $records = [];
+
+        $statusKey = $this->findKey($response, 'response_code');
+        $successKey = $this->findKey($response, 'is_success');
+        $statusText = $this->findKey($response, 'response_text');
+        $attributesKey = $this->findKey($response, 'attributes');
+
+        if (isset($attributesKey)) {
+            $attributes = $response[$attributesKey]['#']['dt_assoc'][0]['#']['item'];
+            $recordsKey = $this->findKey($attributes, 'records');
+            $nsOkKey = $this->findKey($attributes, 'nameservers_ok');
+
+
+            if ($attributes[$nsOkKey]['#'] == '0') {
+                throw new CE_Exception('DNS Records not supported as name servers are not set to OpenSRS default.');
+            }
+
+            $types = $attributes[$recordsKey]['#']['dt_assoc'][0]['#']['item'];
+            $id = 0;
+            foreach ($types as $key => $value) {
+                // Record Type, A, MX, etc
+                $type = $value['@']['key'];
+
+                foreach ($value['#']['dt_array'][0]['#']['item'] as $key => $item) {
+                    $record = $item['#']['dt_assoc'][0]['#']['item'];
+
+                    $address = '';
+                    $hostname = '';
+
+                    foreach ($record as $k => $v) {
+                        if ($v['@']['key'] == 'ip_address') {
+                            $address = $v['#'];
+                        }
+                        if ($v['@']['key'] == 'subdomain') {
+                            $hostname = $v['#'];
+                        }
+                        if ($type == 'MX' && $v['@']['key'] == 'hostname') {
+                            $address = $v['#'];
+                        }
+                        if ($type == 'TXT' && $v['@']['key'] == 'text') {
+                            $address = $v['#'];
+                        }
+                        if ($type == 'AAAA' && $v['@']['key'] == 'ipv6_address') {
+                            $address = $v['#'];
+                        }
+                    }
+                    $records[] = [
+                        'id' => $id++,
+                        'hostname' => $hostname,
+                        'address' => $address,
+                        'type' => $type
+                    ];
+                }
+            }
+        }
+
+        $types = ['A', 'MX', 'CNAME', 'TXT'];
+        return ['records' => $records, 'types' => $types, 'default' => true];
     }
-    function setDNS($params)
+    public function setDNS($params)
     {
-        throw new CE_Exception('Setting DNS Records is not supported in this plugin.');
+        $host = ($params['Use testing server']) ?  $this->testHost : $this->liveHost;
+        $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
+
+        $return = $opensrs->updateDNS($params);
+        CE_Lib::log(4, $return);
+    }
+
+    private function findKey($array, $key)
+    {
+        foreach ($array as $k => $v) {
+            if ($v['@']['key'] == $key) {
+                return $k;
+            }
+        }
     }
 }

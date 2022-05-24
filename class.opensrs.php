@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenSRS Domain Registrar Plugin Communication Class
  *
@@ -12,7 +13,7 @@
  * @link     http://www.clientexec.com
  */
 
-require_once dirname(__FILE__).'/../../../library/CE/XmlFunctions.php';
+require_once dirname(__FILE__) . '/../../../library/CE/XmlFunctions.php';
 
 /**
  * OpenSRS Class
@@ -26,19 +27,19 @@ require_once dirname(__FILE__).'/../../../library/CE/XmlFunctions.php';
  */
 class OpenSRS
 {
-    var $apiVersion = '0.9';
+    private $apiVersion = '0.9';
 
-    var $port;
-    var $host;
-    var $username;
-    var $key;
+    private $port;
+    private $host;
+    private $username;
+    private $key;
 
     /**
      * Constructs a new OpenSRS object.
      *
      * @return OpenSRS An OpenSRS object
      */
-    function __construct($host, $port, $username, $key, $user)
+    public function __construct($host, $port, $username, $key, $user)
     {
         $this->host = $host;
         $this->port = $port;
@@ -55,14 +56,14 @@ class OpenSRS
      * @param string $domain The domain name to lookup
      * @return an xmlized array result - use print_r() to view the structure
      */
-    function lookup_domain($domain, $tld, $namesuggest)
+    public function lookupDomain($domain, $tld, $namesuggest)
     {
 
         // Build the namesuggest items
         $i = 1;
         $namesuggestXml = "";
-        foreach ($namesuggest AS $key) {
-            $namesuggestXml .= "<item key='".$i."'>".$key."</item>";
+        foreach ($namesuggest as $key) {
+            $namesuggestXml .= "<item key='" . $i . "'>" . $key . "</item>";
             ++$i;
         }
 
@@ -79,11 +80,11 @@ class OpenSRS
                                     <item key='0'>lookup</item>
                                 </dt_array>
                             </item>
-                            <item key='searchstring'>".$domain."</item>
+                            <item key='searchstring'>" . $domain . "</item>
                             <item key='tlds'>
                               <dt_array>
-                                <item key='0'>".$tld."</item>
-                                ".$namesuggestXml."
+                                <item key='0'>" . $tld . "</item>
+                                " . $namesuggestXml . "
                               </dt_array>
                             </item>
                           </dt_assoc>
@@ -97,7 +98,7 @@ class OpenSRS
                     </data_block>";
 
         // Send the request to OpenSRS
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
@@ -108,12 +109,12 @@ class OpenSRS
         $response = XmlFunctions::xmlize($response);
 
         $int = 0;
-        foreach ( $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'] as $key => $item ) {
-            if ( $item['@']['key'] == 'attributes' ) {
+        foreach ($response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'] as $key => $item) {
+            if ($item['@']['key'] == 'attributes') {
                 $int = $key;
             }
         }
-        if ( $int == 0 ) {
+        if ($int == 0) {
             return null;
         }
 
@@ -128,34 +129,33 @@ class OpenSRS
         $finalArray = array();
 
         foreach ($response as $key => $item) {
-            if ( $item['@']['key'] == 'response_text' ) {
+            if ($item['@']['key'] == 'response_text') {
                 $responseId = $key;
             }
-            if ( $item['@']['key'] == 'response_code' ) {
+            if ($item['@']['key'] == 'response_code') {
                 $responseCodeId = $key;
             }
         }
         $finalArray['status'] = array("response_text" => $response[$responseId]['#'], "response_code" => $response[$responseCodeId]['#']);
 
-        foreach ( $response as $key => $item ) {
-            if ($item['@']['key'] == 'items' ) {
+        foreach ($response as $key => $item) {
+            if ($item['@']['key'] == 'items') {
                 $lookUpKey = $key;
             }
         }
 
         // Loop it
-        foreach ($response[$lookUpKey]['#']['dt_array'][0]['#']['item'] AS $key) {
-
+        foreach ($response[$lookUpKey]['#']['dt_array'][0]['#']['item'] as $key) {
             // Make a working array
             $workingArray = array();
             $key = $key['#']['dt_assoc'][0]['#']['item'];
 
-            foreach ( $key as $innerKey => $item ) {
-                if ($item['@']['key'] == 'status' ) {
+            foreach ($key as $innerKey => $item) {
+                if ($item['@']['key'] == 'status') {
                     $statusKeyId = $innerKey;
                 }
 
-                if ($item['@']['key'] == 'domain' ) {
+                if ($item['@']['key'] == 'domain') {
                     $domainKeyId = $innerKey;
                 }
             }
@@ -166,7 +166,7 @@ class OpenSRS
             // Explode the domain into parts
             $domainExplode = @explode(".", $workingArray['domain']);
             if (@$domainExplode[2]) {
-                $workingArray['tld'] = $domainExplode[1].".".$domainExplode[2];
+                $workingArray['tld'] = $domainExplode[1] . "." . $domainExplode[2];
             } else {
                 $workingArray['tld'] = $domainExplode[1];
             }
@@ -200,15 +200,15 @@ class OpenSRS
      * @param array $params An array of parameters.
      * @return an xmlized array result - use print_r() to view the structure
      */
-    function renew_domain($params)
+    public function renewDomain($params)
     {
 
         $attributes = "<dt_assoc>
-                        <item key='auto_renew'>".$params['renewname']."</item>
+                        <item key='auto_renew'>" . $params['renewname'] . "</item>
                         <item key='handle'>process</item>
-                        <item key='domain'>".$params['domain']."</item>
-                        <item key='currentexpirationyear'>".$params['expirationyear']."</item>
-                        <item key='period'>" . $params['NumYears'] ."</item>
+                        <item key='domain'>" . $params['domain'] . "</item>
+                        <item key='currentexpirationyear'>" . $params['expirationyear'] . "</item>
+                        <item key='period'>" . $params['NumYears'] . "</item>
                     </dt_assoc>";
 
         $request = "<data_block>
@@ -217,12 +217,12 @@ class OpenSRS
                       <item key='object'>DOMAIN</item>
                       <item key='protocol'>XCP</item>
                       <item key='attributes'>
-                       ".$attributes."
+                       " . $attributes . "
                       </item>
                      </dt_assoc>
                     </data_block>";
 
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
         if ($response == null) {
             return null;
         }
@@ -231,7 +231,7 @@ class OpenSRS
     }
 
 
-    function check_transfer_status($params)
+    public function checkTransferStatus($params)
     {
         $request = "<data_block>
          <dt_assoc>
@@ -248,7 +248,7 @@ class OpenSRS
          </dt_assoc>
       </data_block>";
 
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
         if ($response == null) {
             return null;
         }
@@ -257,23 +257,23 @@ class OpenSRS
         return $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
     }
 
-    function initiate_transfer($params)
+    public function initiateTransfer($params)
     {
         $contactblock = "  <dt_assoc>
-                            <item key='state'>".$params['RegistrantStateProvince']."</item>
-                            <item key='first_name'>".$params['RegistrantFirstName']."</item>
-                            <item key='country'>".$params['RegistrantCountry']."</item>
-                            <item key='address1'>".$params['RegistrantAddress1']."</item>
-                            <item key='last_name'>".$params['RegistrantLastName']."</item>
+                            <item key='state'>" . $params['RegistrantStateProvince'] . "</item>
+                            <item key='first_name'>" . $params['RegistrantFirstName'] . "</item>
+                            <item key='country'>" . $params['RegistrantCountry'] . "</item>
+                            <item key='address1'>" . $params['RegistrantAddress1'] . "</item>
+                            <item key='last_name'>" . $params['RegistrantLastName'] . "</item>
                             <item key='address2'></item>
                             <item key='address3'></item>
-                            <item key='postal_code'>".$params['RegistrantPostalCode']."</item>
+                            <item key='postal_code'>" . $params['RegistrantPostalCode'] . "</item>
                             <item key='fax'></item>
-                            <item key='city'>".$params['RegistrantCity']."</item>
-                            <item key='phone'>".$params['RegistrantPhone']."</item>
-                            <item key='email'>".$params['RegistrantEmailAddress']."</item>
-                            <item key='org_name'>".htmlentities($params['RegistrantOrganizationName'])."</item>
-                            <item key='lang_pref'>".$params['RegistrantLanguage']."</item>
+                            <item key='city'>" . $params['RegistrantCity'] . "</item>
+                            <item key='phone'>" . $params['RegistrantPhone'] . "</item>
+                            <item key='email'>" . $params['RegistrantEmailAddress'] . "</item>
+                            <item key='org_name'>" . htmlentities($params['RegistrantOrganizationName']) . "</item>
+                            <item key='lang_pref'>" . $params['RegistrantLanguage'] . "</item>
                            </dt_assoc>";
 
         $request = "
@@ -288,16 +288,16 @@ class OpenSRS
                         <item key='contact_set'>
                          <dt_assoc>
                           <item key='admin'>
-                           ".$contactblock."
+                           " . $contactblock . "
                           </item>
                           <item key='billing'>
-                           ".$contactblock."
+                           " . $contactblock . "
                           </item>
                           <item key='owner'>
-                           ".$contactblock."
+                           " . $contactblock . "
                           </item>
                           <item key='tech'>
-                           ".$contactblock."
+                           " . $contactblock . "
                           </item>
                          </dt_assoc>
                         </item>
@@ -318,16 +318,15 @@ class OpenSRS
                  </dt_assoc>
               </data_block>";
 
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
         if ($response == null) {
             return null;
         }
         $response = XmlFunctions::xmlize($response);
         return $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
-
     }
 
-    function enable_whois_privacy($params)
+    public function enableWhoisPrivacy($params)
     {
         $request = "
          <data_block>
@@ -346,7 +345,7 @@ class OpenSRS
              </dt_assoc>
         </data_block>";
 
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
         if ($response == null) {
             return null;
         }
@@ -360,39 +359,39 @@ class OpenSRS
      * @param array $params An array of parameters.
      * @return an xmlized array result - use print_r() to view the structure
      */
-    function register_domain($params)
+    public function registerDomain($params)
     {
         $contactblock = "  <dt_assoc>
-                            <item key='state'>".$params['RegistrantStateProvince']."</item>
-                            <item key='first_name'>".$params['RegistrantFirstName']."</item>
-                            <item key='country'>".$params['RegistrantCountry']."</item>
-                            <item key='address1'>".$params['RegistrantAddress1']."</item>
-                            <item key='last_name'>".$params['RegistrantLastName']."</item>
+                            <item key='state'>" . $params['RegistrantStateProvince'] . "</item>
+                            <item key='first_name'>" . $params['RegistrantFirstName'] . "</item>
+                            <item key='country'>" . $params['RegistrantCountry'] . "</item>
+                            <item key='address1'>" . $params['RegistrantAddress1'] . "</item>
+                            <item key='last_name'>" . $params['RegistrantLastName'] . "</item>
                             <item key='address2'></item>
                             <item key='address3'></item>
-                            <item key='postal_code'>".$params['RegistrantPostalCode']."</item>
+                            <item key='postal_code'>" . $params['RegistrantPostalCode'] . "</item>
                             <item key='fax'></item>
-                            <item key='city'>".$params['RegistrantCity']."</item>
-                            <item key='phone'>".$params['RegistrantPhone']."</item>
-                            <item key='email'>".$params['RegistrantEmailAddress']."</item>
-                            <item key='org_name'>".htmlentities($params['RegistrantOrganizationName'])."</item>
-                            <item key='lang_pref'>".$params['RegistrantLanguage']."</item>
+                            <item key='city'>" . $params['RegistrantCity'] . "</item>
+                            <item key='phone'>" . $params['RegistrantPhone'] . "</item>
+                            <item key='email'>" . $params['RegistrantEmailAddress'] . "</item>
+                            <item key='org_name'>" . htmlentities($params['RegistrantOrganizationName']) . "</item>
+                            <item key='lang_pref'>" . $params['RegistrantLanguage'] . "</item>
                            </dt_assoc>";
 
         /* tld specific items */
-        switch($params['tld']) {
+        switch ($params['tld']) {
             case 'ca':
-                $tldspecific = "<item key='isa_trademark'>".$params['ExtendedAttributes']['cira-isa-trademark']."</item>
-                 <item key='legal_type'>".$params['ExtendedAttributes']['cira_legal_type']."</item>";
+                $tldspecific = "<item key='isa_trademark'>" . $params['ExtendedAttributes']['cira-isa-trademark'] . "</item>
+                 <item key='legal_type'>" . $params['ExtendedAttributes']['cira_legal_type'] . "</item>";
                 break;
             case 'us':
                 $tldspecific = "<item key='tld_data'>
                         <dt_assoc>
                           <item key='nexus'>
                            <dt_assoc>
-                            <item key='category'>".$params['ExtendedAttributes']['us_nexus']."</item>
-                            <item key='app_purpose'>".$params['ExtendedAttributes']['us_purpose']."</item>
-                            <item key='validator'>".$params['RegistrantCountry']."</item>
+                            <item key='category'>" . $params['ExtendedAttributes']['us_nexus'] . "</item>
+                            <item key='app_purpose'>" . $params['ExtendedAttributes']['us_purpose'] . "</item>
+                            <item key='validator'>" . $params['RegistrantCountry'] . "</item>
                            </dt_assoc>
                           </item>
                          </dt_assoc>
@@ -401,7 +400,7 @@ class OpenSRS
             case 'name':
                 $tldspecific = "<item key='tld_data'>
                       <dt_assoc>
-                       <item key='forwarding_email'>".$params['RegistrantEmailAddress']."</item>
+                       <item key='forwarding_email'>" . $params['RegistrantEmailAddress'] . "</item>
                       </dt_assoc>
                      </item>";
                 break;
@@ -417,10 +416,10 @@ class OpenSRS
                     <dt_array>";
             for ($i = 1; $i <= 12; $i++) {
                 if (isset($params["NS$i"])) {
-                    $ns.= "<item key='".($i-1)."'>
+                    $ns .= "<item key='" . ($i - 1) . "'>
                           <dt_assoc>
-                           <item key='sortorder'>".$i."</item>
-                           <item key='name'>".$params['NS'.$i]['hostname']."</item>
+                           <item key='sortorder'>" . $i . "</item>
+                           <item key='name'>" . $params['NS' . $i]['hostname'] . "</item>
                           </dt_assoc>
                          </item>";
                 } else {
@@ -438,40 +437,40 @@ class OpenSRS
                       <item key='protocol'>XCP</item>
                       <item key='attributes'>
                        <dt_assoc>
-                        <item key='auto_renew'>".$params['renewname']."</item>
+                        <item key='auto_renew'>" . $params['renewname'] . "</item>
                         <item key='contact_set'>
                          <dt_assoc>
                           <item key='admin'>
-                           ".$contactblock."
+                           " . $contactblock . "
                           </item>
                           <item key='billing'>
-                           ".$contactblock."
+                           " . $contactblock . "
                           </item>
                           <item key='owner'>
-                           ".$contactblock."
+                           " . $contactblock . "
                           </item>
                           <item key='tech'>
-                           ".$contactblock."
+                           " . $contactblock . "
                           </item>
                          </dt_assoc>
                         </item>
-                        <item key='custom_nameservers'>".$params['Custom NS']."</item>
+                        <item key='custom_nameservers'>" . $params['Custom NS'] . "</item>
                         <item key='custom_tech_contact'>1</item>
-                        <item key='domain'>".$params['domain']."</item>
+                        <item key='domain'>" . $params['domain'] . "</item>
                         <item key='f_lock_domain'>1</item>
                         <item key='handle'>process</item>
-                        ".$tldspecific."
-                        ".$ns."
-                        <item key='period'>".$params['NumYears']."</item>
-                        <item key='reg_username'>".$params['DomainUsername']."</item>
-                        <item key='reg_password'>".$params['DomainPassword']."</item>
+                        " . $tldspecific . "
+                        " . $ns . "
+                        <item key='period'>" . $params['NumYears'] . "</item>
+                        <item key='reg_username'>" . $params['DomainUsername'] . "</item>
+                        <item key='reg_password'>" . $params['DomainPassword'] . "</item>
                         <item key='type'>new</item>
                        </dt_assoc>
                       </item>
                      </dt_assoc>
                     </data_block>";
 
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
         if ($response == null) {
             return null;
         }
@@ -486,7 +485,7 @@ class OpenSRS
      * @param string $domain The domain name to lookup
      * @return an xmlized array result - use print_r() to view the structure
      */
-    function set_autorenew($domain, $tld, $autorenew, $cookie = null)
+    public function setAutorenew($domain, $tld, $autorenew, $cookie = null)
     {
 
         // Fix to stop null $autorenew values
@@ -500,11 +499,11 @@ class OpenSRS
                         <item key='protocol'>XCP</item>
                         <item key='action'>modify</item>
                         <item key='object'>domain</item>
-                        <item key='domain'>".$domain.".".$tld."</item>
+                        <item key='domain'>" . $domain . "." . $tld . "</item>
                         <item key='attributes'>
                           <dt_assoc>
                             <item key='affect_domains'>0</item>
-                            <item key='auto_renew'>".$autorenew."</item>
+                            <item key='auto_renew'>" . $autorenew . "</item>
                             <item key='let_expire'>0</item>
                             <item key='data'>expire_action</item>
                           </dt_assoc>
@@ -513,7 +512,7 @@ class OpenSRS
                     </data_block>";
 
         // Send the request to OpenSRS
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
@@ -540,7 +539,7 @@ class OpenSRS
     }
 
 
-    function get_lock($domain, $tld)
+    public function getLock($domain, $tld)
     {
         // Build the request
         $request = "<data_block>
@@ -560,7 +559,7 @@ class OpenSRS
                     </data_block>";
 
         // Send the request to OpenSRS
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
@@ -576,7 +575,7 @@ class OpenSRS
         return $response;
     }
 
-    function set_lock($domain, $tld, $lock)
+    public function setLock($domain, $tld, $lock)
     {
         // Build the request
         $request = "<data_block>
@@ -587,16 +586,16 @@ class OpenSRS
                         <item key='attributes'>
                           <dt_assoc>
                             <item key='affect_domains'>0</item>
-                            <item key='lock_state'>".$lock."</item>
+                            <item key='lock_state'>" . $lock . "</item>
                             <item key='data'>status</item>
-                            <item key='domain_name'>".$domain.".".$tld."</item>
+                            <item key='domain_name'>" . $domain . "." . $tld . "</item>
                           </dt_assoc>
                         </item>
                       </dt_assoc>
                     </data_block>";
 
         // Send the request to OpenSRS
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
@@ -612,7 +611,7 @@ class OpenSRS
         return $response;
     }
 
-    function send_authcode($domain, $tld)
+    public function sendAuthcode($domain, $tld)
     {
         // Build the request
         $request = "<data_block>
@@ -622,14 +621,14 @@ class OpenSRS
                         <item key='object'>domain</item>
                         <item key='attributes'>
                           <dt_assoc>
-                            <item key='domain_name'>".$domain.".".$tld."</item>
+                            <item key='domain_name'>" . $domain . "." . $tld . "</item>
                           </dt_assoc>
                         </item>
                       </dt_assoc>
                     </data_block>";
 
         // Send the request to OpenSRS
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
@@ -651,7 +650,7 @@ class OpenSRS
      * @param string $domain The domain name to lookup
      * @return an xmlized array result - use print_r() to view the structure
      */
-    function get_domain_info($domain, $tld, $type)
+    public function getDomainInfo($domain, $tld, $type)
     {
         // Build the request
         $request = "<data_block>
@@ -670,7 +669,7 @@ class OpenSRS
                     </data_block>";
 
         // Send the request to OpenSRS
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
@@ -684,66 +683,66 @@ class OpenSRS
         $response = $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
         $finalArray = [];
         foreach ($response as $key => $value) {
-          if ( $value['@']['key'] == 'response_text') {
-            $responseTextId = $key;
-          } else if ( $value['@']['key'] == 'response_code') {
-            $responseCodeId = $key;
-          }
+            if ($value['@']['key'] == 'response_text') {
+                $responseTextId = $key;
+            } elseif ($value['@']['key'] == 'response_code') {
+                $responseCodeId = $key;
+            }
         }
         $finalArray['status'] = [
           "response_text" => $response[$responseTextId]['#'],
           "response_code" => $response[$responseCodeId]['#']
         ];
 
-        if ( $response[4]['#'] == 'Authentication Error.' ) {
+        if ($response[4]['#'] == 'Authentication Error.') {
             // This function is called and sometime causes errors when viewing a domain, but we do not want to throw an exception each time.
-            CE_Lib::log(4, "Authentication Error with OpenSRS.", EXCEPTION_CODE_CONNECTION_ISSUE);
+            CE_Lib::log(4, "Authentication Error with OpenSRs . ", EXCEPTION_CODE_CONNECTION_ISSUE);
             return null;
         }
 
-        if ( $type == 'nameserver' ) {
+        if ($type == 'nameserver') {
             $nameservers = array();
             foreach ($response as $key => $value) {
-              if ( $value['@']['key'] == 'attributes') {
-                $attributesId = $key;
-              }
+                if ($value['@']['key'] == 'attributes') {
+                    $attributesId = $key;
+                }
             }
             $response = $response[$attributesId]['#']['dt_assoc'][0]['#']['item'];
-            foreach ( $response as $key => $value ) {
-                if ( $value['@']['key'] == 'nameserver_list') {
+            foreach ($response as $key => $value) {
+                if ($value['@']['key'] == 'nameserver_list') {
                     $nameServerId = $key;
                 }
             }
 
-            foreach ( $response[$nameServerId]['#']['dt_array'][0]['#']['item'] as $item ) {
-              foreach ($item['#']['dt_assoc'][0]['#']['item'] as $key => $value) {
-                if ( $value['@']['key'] == 'name') {
-                  $nameId = $key;
+            foreach ($response[$nameServerId]['#']['dt_array'][0]['#']['item'] as $item) {
+                foreach ($item['#']['dt_assoc'][0]['#']['item'] as $key => $value) {
+                    if ($value['@']['key'] == 'name') {
+                        $nameId = $key;
+                    }
                 }
-              }
-              $nameservers[] = $item['#']['dt_assoc'][0]['#']['item'][$nameId]['#'];
+                $nameservers[] = $item['#']['dt_assoc'][0]['#']['item'][$nameId]['#'];
             }
             return $nameservers;
 
             // Determine what we are outputting
         } elseif ($type == 'general') {
             $attributesKey = 0;
-            foreach ( $response as $key => $tempResponse ) {
-                if ( $tempResponse['@']['key'] == 'attributes' ) {
+            foreach ($response as $key => $tempResponse) {
+                if ($tempResponse['@']['key'] == 'attributes') {
                     $attributesKey = $key;
                 }
             }
             // Set the next block of the response
             $response = $response[$attributesKey]['#']['dt_assoc'][0]['#']['item'];
 
-            foreach ( $response as $key => $value ) {
-                if ( $value['@']['key'] == 'auto_renew') {
+            foreach ($response as $key => $value) {
+                if ($value['@']['key'] == 'auto_renew') {
                     $autoRenewId = $key;
                 }
-                if ( $value['@']['key'] == 'registry_createdate') {
+                if ($value['@']['key'] == 'registry_createdate') {
                     $createDateId = $key;
                 }
-                if ( $value['@']['key'] == 'registry_expiredate') {
+                if ($value['@']['key'] == 'registry_expiredate') {
                     $expireDateId = $key;
                 }
             }
@@ -752,60 +751,57 @@ class OpenSRS
             $finalArray['generalInfo'] = array('auto_renew' => $response[$autoRenewId]['#'],
                                                'registry_createdate' => $response[$createDateId]['#'],
                                                'registry_expiredate' => $response[$expireDateId]['#']);
-
         } elseif ($type == 'contact') {
-
-            foreach ( $response as $key => $tempResponse ) {
-                if ( $tempResponse['@']['key'] == 'attributes' ) {
+            foreach ($response as $key => $tempResponse) {
+                if ($tempResponse['@']['key'] == 'attributes') {
                     $attributesKey = $key;
                 }
             }
 
             $response = $response[$attributesKey]['#']['dt_assoc'][0]['#']['item'];
-            foreach ( $response as $key => $value ) {
-                if ( $value['@']['key'] == 'contact_set') {
+            foreach ($response as $key => $value) {
+                if ($value['@']['key'] == 'contact_set') {
                     $contactSetId = $key;
                 }
             }
 
             $response = $response[$contactSetId]['#']['dt_assoc'][0]['#']['item'][1]['#']['dt_assoc'][0]['#']['item'];
-            foreach ( $response as $key => $value ) {
-
-                if ( $value['@']['key'] == 'country') {
+            foreach ($response as $key => $value) {
+                if ($value['@']['key'] == 'country') {
                     $country = $value['#'];
                 }
 
-                if ( $value['@']['key'] == 'address1') {
+                if ($value['@']['key'] == 'address1') {
                     $address1 = $value['#'];
                 }
-                if ( $value['@']['key'] == 'org_name') {
+                if ($value['@']['key'] == 'org_name') {
                     $orgName = $value['#'];
                 }
-                if ( $value['@']['key'] == 'address2') {
+                if ($value['@']['key'] == 'address2') {
                     $address2 = $value['#'];
                 }
-                if ( $value['@']['key'] == 'email') {
+                if ($value['@']['key'] == 'email') {
                     $email = $value['#'];
                 }
-                if ( $value['@']['key'] == 'state') {
+                if ($value['@']['key'] == 'state') {
                     $state = $value['#'];
                 }
-                if ( $value['@']['key'] == 'city') {
+                if ($value['@']['key'] == 'city') {
                     $city = $value['#'];
                 }
-                if ( $value['@']['key'] == 'first_name') {
+                if ($value['@']['key'] == 'first_name') {
                     $firstName = $value['#'];
                 }
-                if ( $value['@']['key'] == 'last_name') {
+                if ($value['@']['key'] == 'last_name') {
                     $lastName = $value['#'];
                 }
-                if ( $value['@']['key'] == 'phone') {
+                if ($value['@']['key'] == 'phone') {
                     $phone = $value['#'];
                 }
-                if ( $value['@']['key'] == 'postal_code') {
+                if ($value['@']['key'] == 'postal_code') {
                     $postCode = $value['#'];
                 }
-                if ( $value['@']['key'] == 'fax') {
+                if ($value['@']['key'] == 'fax') {
                     $fax = $value['#'];
                 }
             }
@@ -833,6 +829,162 @@ class OpenSRS
         return $finalArray;
     }
 
+    public function getDNSRecords($domain, $tld)
+    {
+        $request = "<data_block>
+                        <dt_assoc>
+                            <item key='protocol'>XCP</item>
+                            <item key='action'>get_dns_zone</item>
+                            <item key='object'>domain</item>
+                            <item key='attributes'>
+                                <dt_assoc>
+                                    <item key='domain'>$domain.$tld</item>
+                                </dt_assoc>
+                            </item>
+                        </dt_assoc>
+                    </data_block>";
+
+        // Send the request to OpenSRS
+        $response = $this->buildAndSendRequest($request);
+
+        // Check the response
+        if ($response == null) {
+            return null;
+        }
+
+        // XMLize the reply
+        $response = XmlFunctions::xmlize($response);
+
+        // Get the first part of the response
+        $response = @$response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
+        foreach ($response as $key => $value) {
+            if ($value['#'] == 'DNS zone not found for domain') {
+                $this->enableDNSZone($domain, $tld);
+                return $this->getDNSRecords();
+            }
+        }
+        return $response;
+    }
+
+    private function enableDNSZone($domain, $tld)
+    {
+        $request = "<data_block>
+            <dt_assoc>
+                <item key='protocol'>XCP</item>
+                <item key='action'>create_dns_zone</item>
+                <item key='object'>domain</item>
+                <item key='attributes'>
+                    <dt_assoc>
+                        <item key='domain'>$domain.$tld</item>
+                    </dt_assoc>
+                </item>
+            </dt_assoc>
+        </data_block>";
+
+        // Send the request to OpenSRS
+        $response = $this->buildAndSendRequest($request);
+
+        // Check the response
+        if ($response == null) {
+            return null;
+        }
+
+        // XMLize the reply
+        $response = XmlFunctions::xmlize($response);
+
+        // Get the first part of the response
+        $response = @$response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
+    }
+
+    public function updateDNS($params)
+    {
+        $items = [];
+        $items['A'] = [];
+        $items['CNAME'] = [];
+        $items['MX'] = [];
+        $items['TXT'] = [];
+        $items['AAAA'] = [];
+
+        foreach ($params['records'] as $record) {
+            if ($record['type'] == 'A') {
+                $item = [
+                    'subdomain' => $record['hostname'],
+                    'ip_address' => $record['address']
+                ];
+            } elseif ($record['type'] == 'CNAME') {
+                $item = [
+                    'subdomain' => $record['hostname'],
+                    'hostname' => $record['address']
+                ];
+            } elseif ($record['type'] == 'MX') {
+                $item = [
+                    'subdomain' => $record['hostname'],
+                    'hostname' => $record['address'],
+                    'priority' => 10
+                ];
+            } elseif ($record['type'] == 'TXT') {
+                $item = [
+                    'subdomain' => $record['hostname'],
+                    'text' => $record['address']
+                ];
+            } elseif ($record['type'] == 'AAAA') {
+                $item = [
+                    'subdomain' => $record['hostname'],
+                    'ipv6_address' => $record['address']
+                ];
+            }
+            $items[$record['type']][] = $item;
+        }
+        $request = "<data_block>
+            <dt_assoc>
+                <item key='protocol'>XCP</item>
+                <item key='action'>SET_DNS_ZONE</item>
+                <item key='object'>DOMAIN</item>
+                <item key='attributes'>
+                    <dt_assoc>
+                        <item key='domain'>{$params['sld']}.{$params['tld']}</item>
+                        <item key='records'>
+                            <dt_assoc>\n";
+        foreach ($items as $key => $types) {
+            if (count($types) > 0) {
+                $request .= "\t\t\t\t\t\t\t\t<item key='{$key}'>
+                                <dt_array>\n";
+            }
+            $num = 0;
+            foreach ($types as $record) {
+                $request .= "
+                                    <item key='{$num}'>
+                                        <dt_assoc>\n";
+                foreach (array_keys($record) as $i) {
+                    $request .= "\t\t\t\t\t\t\t\t\t\t\t<item key='{$i}'>{$record[$i]}</item>\n";
+                }
+
+                $request .= "\t\t\t\t\t\t\t\t\t\t</dt_assoc>
+                                    </item>\n";
+                $num++;
+            }
+            if (count($types) > 0) {
+                $request .= "\t\t\t\t\t\t\t\t</dt_array>
+                        \t\t</item>\n";
+            }
+        }
+        $request .= "   </dt_assoc>
+                        </item>
+                    </dt_assoc>
+                </item>
+                </dt_assoc>
+            </data_block>";
+
+        $response = $this->buildAndSendRequest($request);
+        if ($response == null) {
+            return null;
+        }
+        $response = XmlFunctions::xmlize($response);
+        return $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
+    }
+
+
+
 
     /**
      * Get a list of domains from OpenSRS
@@ -840,11 +992,11 @@ class OpenSRS
      * @param string $domain The domain name to lookup
      * @return an xmlized array result - use print_r() to view the structure
      */
-    function get_domains_list($page)
+    public function getDomainsList($page)
     {
 
-        $previousYear = date("Y")-1;
-        $nextYears = date("Y")+11;
+        $previousYear = date("Y") - 1;
+        $nextYears = date("Y") + 11;
         $limit = 100;
 
         // Build the request
@@ -856,16 +1008,16 @@ class OpenSRS
                         <item key='attributes'>
                           <dt_assoc>
                             <item key='limit'>$limit</item>
-                            <item key='exp_from'>".$previousYear."-01-01</item>
-                            <item key='exp_to'>".$nextYears."-01-01</item>
-                            <item key='page'>".$page."</item>
+                            <item key='exp_from'>" . $previousYear . "-01-01</item>
+                            <item key='exp_to'>" . $nextYears . "-01-01</item>
+                            <item key='page'>" . $page . "</item>
                           </dt_assoc>
                         </item>
                       </dt_assoc>
                     </data_block>";
 
         // Send the request to OpenSRS
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
@@ -880,18 +1032,37 @@ class OpenSRS
 
         $domainNameGateway = new DomainNameGateway();
 
+        foreach ($response as $key => $value) {
+            if ($value['@']['key'] == 'attributes') {
+                $attributeKey = $key;
+            }
+        }
+        foreach ($response[$attributeKey]['#']['dt_assoc'][0]['#']['item'] as $key => $value) {
+            if ($value['@']['key'] == 'exp_domains') {
+                $itemKey = $key;
+            }
+        }
+
         $domainsList = array();
-        if (@$response[4]['#']['dt_assoc'][0]['#']['item'][3]['#'] > 0) {
+        if ($response[$attributeKey]['#']['dt_assoc'][0]['#']['item'][$itemKey]['#'] > 0) {
             $i = 0;
-            foreach ($response[4]['#']['dt_assoc'][0]['#']['item'][0]['#']['dt_array'][0]['#']['item'] as $domain) {
+            foreach ($response[$attributeKey]['#']['dt_assoc'][0]['#']['item'][$itemKey]['#']['dt_array'][0]['#']['item'] as $domain) {
                 $domain = $domain['#']['dt_assoc'][0]['#']['item'];
 
-                $splitDomain = $domainNameGateway->splitDomain($domain[1]['#']);
+                foreach ($domain as $key => $value) {
+                    if ($value['@']['key'] == 'name') {
+                        $domainNameKey = $key;
+                    } elseif ($value['@']['key'] == 'expiredate') {
+                        $expKey = $key;
+                    }
+                }
+
+                $splitDomain = $domainNameGateway->splitDomain($domain[$domainNameKey]['#']);
 
                 $data['id'] = ++$i;
                 $data['sld'] = $splitDomain[0];
                 $data['tld'] = $splitDomain[1];
-                $data['exp'] = $domain[2]['#'];
+                $data['exp'] = $domain[$expKey]['#'];
                 $domainsList[] = $data;
             }
         }
@@ -913,7 +1084,7 @@ class OpenSRS
      * @return an xmlized array result - use print_r() to view the structure
      */
 
-    function get_cookie($params)
+    public function getCookie($params)
     {
 
         // Build the request
@@ -924,20 +1095,20 @@ class OpenSRS
                         <item key='object'>cookie</item>
                         <item key='attributes'>
                           <dt_assoc>
-                            <item key='reg_username'>".$params['domainUsername']."</item>
-                            <item key='reg_password'>".$params['domainPassword']."</item>
-                            <item key='domain'>".$params['sld'].".".$params['tld']."</item>
+                            <item key='reg_username'>" . $params['domainUsername'] . "</item>
+                            <item key='reg_password'>" . $params['domainPassword'] . "</item>
+                            <item key='domain'>" . $params['sld'] . "." . $params['tld'] . "</item>
                           </dt_assoc>
                         </item>
                       </dt_assoc>
                     </data_block>";
 
         // Send the request to OpenSRS
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
-            throw new Exception("OpenSRS API Error: Unable to communicate with OpenSRS.");
+            throw new Exception("OpenSRS API Error: Unable to communicate with OpenSRs . ");
         }
 
         // XMLize the reply
@@ -948,7 +1119,6 @@ class OpenSRS
 
         // Check the response code
         if (@$response[4]['#'] == '415') {
-
             // Throw error
             throw new Exception("OpenSRS API Error: Unable to authenticate using the Domain Username & Password.");
         }
@@ -960,12 +1130,12 @@ class OpenSRS
         return $response;
     }
 
-    function set_nameservers($params)
+    public function setNameservers($params)
     {
         // get our new name servers to add to the domain
         $nameServerKeys = "";
-        foreach ( $params['ns'] as $key => $nameServer ) {
-            $nameServerKeys .= "<item key='" . ($key-1) . "'>$nameServer</item>\n";
+        foreach ($params['ns'] as $key => $nameServer) {
+            $nameServerKeys .= "<item key='" . ($key - 1) . "'>$nameServer</item>\n";
         }
 
         $request = "
@@ -988,11 +1158,11 @@ class OpenSRS
             </dt_assoc>
         </data_block>";
 
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
-            throw new Exception("OpenSRS API Error: Unable to communicate with OpenSRS.");
+            throw new Exception("OpenSRS API Error: Unable to communicate with OpenSRs . ");
         }
 
         // XMLize the reply
@@ -1002,25 +1172,24 @@ class OpenSRS
         $response = $response['OPS_envelope']['#']['body'][0]['#']['data_block'][0]['#']['dt_assoc'][0]['#']['item'];
 
         return $response;
-
     }
 
-    function update_contact($params)
+    public function updateContact($params)
     {
          $contactblock = "<dt_assoc>
-                            <item key='state'>".$params['Registrant_StateProv']."</item>
-                            <item key='first_name'>".$params['Registrant_FirstName']."</item>
-                            <item key='country'>".$params['Registrant_Country']."</item>
-                            <item key='address1'>".$params['Registrant_Address1']."</item>
-                            <item key='last_name'>".$params['Registrant_LastName']."</item>
+                            <item key='state'>" . $params['Registrant_StateProv'] . "</item>
+                            <item key='first_name'>" . $params['Registrant_FirstName'] . "</item>
+                            <item key='country'>" . $params['Registrant_Country'] . "</item>
+                            <item key='address1'>" . $params['Registrant_Address1'] . "</item>
+                            <item key='last_name'>" . $params['Registrant_LastName'] . "</item>
                             <item key='address2'></item>
                             <item key='address3'></item>
-                            <item key='postal_code'>".$params['Registrant_PostalCode']."</item>
+                            <item key='postal_code'>" . $params['Registrant_PostalCode'] . "</item>
                             <item key='fax'></item>
-                            <item key='city'>".$params['Registrant_City']."</item>
-                            <item key='phone'>".$params['Registrant_Phone']."</item>
-                            <item key='email'>".$params['Registrant_EmailAddress']."</item>
-                            <item key='org_name'>".htmlentities($params['Registrant_OrganizationName'])."</item>
+                            <item key='city'>" . $params['Registrant_City'] . "</item>
+                            <item key='phone'>" . $params['Registrant_Phone'] . "</item>
+                            <item key='email'>" . $params['Registrant_EmailAddress'] . "</item>
+                            <item key='org_name'>" . htmlentities($params['Registrant_OrganizationName']) . "</item>
                            </dt_assoc>";
 
         $request = "<data_block>
@@ -1041,16 +1210,16 @@ class OpenSRS
                             <item key='contact_set'>
                                 <dt_assoc>
                                     <item key='admin'>
-                                        ".$contactblock."
+                                        " . $contactblock . "
                                     </item>
                                     <item key='billing'>
-                                        ".$contactblock."
+                                        " . $contactblock . "
                                     </item>
                                     <item key='owner'>
-                                        ".$contactblock."
+                                        " . $contactblock . "
                                     </item>
                                     <item key='tech'>
-                                        ".$contactblock."
+                                        " . $contactblock . "
                                     </item>
                                 </dt_assoc>
                             </item>
@@ -1059,11 +1228,11 @@ class OpenSRS
                       </dt_assoc>
                     </data_block>";
 
-        $response = $this->_buildAndSendRequest($request);
+        $response = $this->buildAndSendRequest($request);
 
         // Check the response
         if ($response == null) {
-            throw new Exception("OpenSRS API Error: Unable to communicate with OpenSRS.");
+            throw new Exception("OpenSRS API Error: Unable to communicate with OpenSRs . ");
         }
 
         // XMLize the reply
@@ -1079,22 +1248,22 @@ class OpenSRS
      * @param String $request The xml request body
      * @return The xml string response
      */
-    function _buildAndSendRequest($request)
+    private function buildAndSendRequest($request)
     {
         // Make the start of the XML request
         $request = '<?xml version=\'1.0\' encoding="UTF-8" standalone="no" ?>
                     <!DOCTYPE OPS_envelope SYSTEM "ops.dtd">
                     <OPS_envelope>
                      <header>
-                      <version>'.$this->apiVersion.'</version>
+                      <version>' . $this->apiVersion . '</version>
                      </header>
                      <body>
-                       '.$request.'
+                       ' . $request . '
                      </body>
                     </OPS_envelope>';
 
         // Generate the signature
-        $signature = md5(md5($request.$this->key).$this->key);
+        $signature = md5(md5($request . $this->key) . $this->key);
 
         // Contruct the headers
         $header = [
@@ -1108,6 +1277,12 @@ class OpenSRS
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
+        $caPathOrFile = \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath();
+        if (is_dir($caPathOrFile)) {
+            curl_setopt($ch, CURLOPT_CAPATH, $caPathOrFile);
+        } else {
+            curl_setopt($ch, CURLOPT_CAINFO, $caPathOrFile);
+        }
         $response = curl_exec($ch);
 
         if ($errno = curl_errno($ch)) {
