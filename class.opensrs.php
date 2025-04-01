@@ -259,8 +259,13 @@ class OpenSRS
 
     public function initiateTransfer($params)
     {
+        // Mexican State ROO needs to be sent as QR to OpenSRS.
+        if ($params['RegistrantStateProvinceCode'] == 'ROO') {
+            $params['RegistrantStateProvinceCode'] = 'QR';
+        }
+
         $contactblock = "  <dt_assoc>
-                            <item key='state'>" . $params['RegistrantStateProvince'] . "</item>
+                            <item key='state'>" . $params['RegistrantStateProvinceCode'] . "</item>
                             <item key='first_name'>" . $params['RegistrantFirstName'] . "</item>
                             <item key='country'>" . $params['RegistrantCountry'] . "</item>
                             <item key='address1'>" . $params['RegistrantAddress1'] . "</item>
@@ -361,8 +366,13 @@ class OpenSRS
      */
     public function registerDomain($params)
     {
+        // Mexican State ROO needs to be sent as QR to OpenSRS.
+        if ($params['RegistrantStateProvinceCode'] == 'ROO') {
+            $params['RegistrantStateProvinceCode'] = 'QR';
+        }
+
         $contactblock = "  <dt_assoc>
-                            <item key='state'>" . $params['RegistrantStateProvince'] . "</item>
+                            <item key='state'>" . $params['RegistrantStateProvinceCode'] . "</item>
                             <item key='first_name'>" . $params['RegistrantFirstName'] . "</item>
                             <item key='country'>" . $params['RegistrantCountry'] . "</item>
                             <item key='address1'>" . $params['RegistrantAddress1'] . "</item>
