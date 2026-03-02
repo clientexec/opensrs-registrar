@@ -259,6 +259,7 @@ class OpenSRS
 
     public function initiateTransfer($params)
     {
+        $params['DomainPassword'] = substr($params['DomainPassword'], 0, 20);
         // Mexican State ROO needs to be sent as QR to OpenSRS.
         if ($params['RegistrantStateProvinceCode'] == 'ROO') {
             $params['RegistrantStateProvinceCode'] = 'QR';
@@ -333,6 +334,7 @@ class OpenSRS
 
     public function enableWhoisPrivacy($params)
     {
+        $params['DomainPassword'] = substr($params['DomainPassword'], 0, 20);
         $request = "
          <data_block>
              <dt_assoc>
@@ -366,6 +368,7 @@ class OpenSRS
      */
     public function registerDomain($params)
     {
+        $params['DomainPassword'] = substr($params['DomainPassword'], 0, 20);
         // Mexican State ROO needs to be sent as QR to OpenSRS.
         if ($params['RegistrantStateProvinceCode'] == 'ROO') {
             $params['RegistrantStateProvinceCode'] = 'QR';
@@ -1051,10 +1054,13 @@ class OpenSRS
             if ($value['@']['key'] == 'exp_domains') {
                 $itemKey = $key;
             }
+            if ($value['@']['key'] == 'total') {
+                $totalKey = $key;
+            }
         }
 
-        $domainsList = array();
-        if ($response[$attributeKey]['#']['dt_assoc'][0]['#']['item'][$itemKey]['#'] > 0) {
+        $domainsList = [];
+        if ($response[$attributeKey]['#']['dt_assoc'][0]['#']['item'][$totalKey]['#'] > 0) {
             $i = 0;
             foreach ($response[$attributeKey]['#']['dt_assoc'][0]['#']['item'][$itemKey]['#']['dt_array'][0]['#']['item'] as $domain) {
                 $domain = $domain['#']['dt_assoc'][0]['#']['item'];
@@ -1077,14 +1083,14 @@ class OpenSRS
             }
         }
 
-        $metaData = array();
-        $metaData['total'] = @$response[4]['#']['dt_assoc'][0]['#']['item'][3]['#'];
+        $metaData = [];
+        $metaData['total'] = @$response[$attributeKey]['#']['dt_assoc'][0]['#']['item'][$totalKey]['#'];
         $metaData['start'] = ($page * $limit) - $limit;
         $metaData['end'] = $page * $limit;
         $metaData['next'] = ++$page;
         $metaData['numPerPage'] = $limit;
 
-        return array($domainsList, $metaData);
+        return [$domainsList, $metaData];
     }
 
     /**
@@ -1106,7 +1112,7 @@ class OpenSRS
                         <item key='attributes'>
                           <dt_assoc>
                             <item key='reg_username'>" . $params['domainUsername'] . "</item>
-                            <item key='reg_password'>" . $params['domainPassword'] . "</item>
+                            <item key='reg_password'>" . substr($params['domainPassword'], 0, 20) . "</item>
                             <item key='domain'>" . $params['sld'] . "." . $params['tld'] . "</item>
                           </dt_assoc>
                         </item>
