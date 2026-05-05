@@ -121,8 +121,8 @@ class PluginOpensrs extends RegistrarPlugin
         // Check the reply
         if ($return == null) {
             CE_Lib::log(4, 'Return is null');
-            CE_Lib::log(1, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            CE_Lib::log(1, "OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
         }
 
         // Check we had a succcess code
@@ -189,8 +189,8 @@ class PluginOpensrs extends RegistrarPlugin
         $return = $opensrs->checkTransferStatus($params);
 
         if ($return == null) {
-            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
         }
         foreach ($return as $key => $val) {
             if ($val['@']['key'] == 'response_code') {
@@ -280,8 +280,8 @@ class PluginOpensrs extends RegistrarPlugin
         $return = $opensrs->initiateTransfer($params);
 
         if ($return == null) {
-            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
         }
         foreach ($return as $key => $val) {
             if ($val['@']['key'] == 'response_code') {
@@ -377,8 +377,8 @@ class PluginOpensrs extends RegistrarPlugin
         $return = $opensrs->renewDomain($params);
 
         if ($return == null) {
-            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
         }
         foreach ($return as $key => $val) {
             if ($val['@']['key'] == 'response_code') {
@@ -499,8 +499,8 @@ class PluginOpensrs extends RegistrarPlugin
         //print_r($return);
 
         if ($return == null) {
-            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new CE_Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
+            throw new CE_Exception("OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
         }
         foreach ($return as $key => $val) {
             if ($val['@']['key'] == 'response_code') {
@@ -536,8 +536,8 @@ class PluginOpensrs extends RegistrarPlugin
             if (isset($params['package_addons']['IDPROTECT']) && $params['package_addons']['IDPROTECT'] == 1) {
                 $return = $opensrs->enableWhoisPrivacy($params);
                 if ($return == null) {
-                    CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-                    throw new CE_Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+                    CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
+                    throw new CE_Exception("OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
                 }
             }
             // return reg id for the domain
@@ -777,8 +777,8 @@ class PluginOpensrs extends RegistrarPlugin
         $return = $opensrs->getLock(strtolower($params['sld']), strtolower($params['tld']));
 
         if ($return == null) {
-            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
         }
         foreach ($return as $key => $val) {
             if ($val['@']['key'] == 'response_code') {
@@ -828,8 +828,8 @@ class PluginOpensrs extends RegistrarPlugin
         $return = $opensrs->setLock(strtolower($params['sld']), strtolower($params['tld']), $params['lock']);
 
         if ($return == null) {
-            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
-            throw new Exception("OpenSRS Error: Ensure port 55443 is open and PHP is compiled with OpenSSL.");
+            CE_Lib::log(4, "OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
+            throw new Exception("OpenSRS Error: Ensure port 55443 is open and you have added your IP to the OpenSRS allow list.");
         }
     }
 
