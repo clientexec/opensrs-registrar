@@ -47,45 +47,45 @@ class PluginOpensrs extends RegistrarPlugin
     public function getVariables()
     {
         $variables = array(
-                lang('Plugin Name') => array (
-                        'type'          => 'hidden',
-                        'description'   => lang('How CE sees this plugin (not to be confused with the Signup Name)'),
-                        'value'         => lang('OpenSRS')
-                ),
-                lang('Use testing server') => array(
-                        'type'          => 'yesno',
-                        'description'   => lang('Select Yes if you wish to use OpenSRS\'s testing environment, so that transactions are not actually made.'),
-                        'value'         => 0
-                ),
-                lang('Username') => array(
-                        'type'          => 'text',
-                        'description'   => lang('Enter your username for your OpenSRS reseller account.<br/>'),
-                        'value'         => '',
-                ),
-                lang('Private Key')  => array(
-                        'type'          => 'text',
-                        'description'   => lang('Enter your OpenSRS reseller private key.'),
-                        'value'         => '',
-                ),
-                lang('Supported Features')  => array(
-                        'type'          => 'label',
-                        'description'   => '* ' . lang('TLD Lookup, with Name Suggestions') . '<br>* ' . lang('Domain Registration') . ' <br>* ' . lang('Domain Registration with ID Protect') . ' <br>* ' . lang('Existing Domain Importing') . ' <br>* ' . lang('Get / Set Auto Renew Status') . ' <br>* ' . lang('Get / Set Nameserver Records') . ' <br>* ' . lang('Get / Set Contact Information') . ' <br>* ' . lang('Get / Set Registrar Lock') . ' <br>* ' . lang('Initiate Domain Transfer') . ' <br>* ' . lang('Automatically Renew Domain') . ' <br>',
-                        'value'         => ''
-                ),
-               lang('Actions') => array (
-                                'type'          => 'hidden',
-                                'description'   => lang('Current actions that are active for this plugin (when a domain isn\'t registered)'),
-                                'value'         => 'Register'
-                                ),
+            lang('Plugin Name') => array (
+                'type'          => 'hidden',
+                'description'   => lang('How CE sees this plugin (not to be confused with the Signup Name)'),
+                'value'         => lang('OpenSRS')
+            ),
+            lang('Use testing server') => array(
+                'type'          => 'yesno',
+                'description'   => lang('Select Yes if you wish to use OpenSRS\'s testing environment, so that transactions are not actually made.'),
+                'value'         => 0
+            ),
+            lang('Username') => array(
+                'type'          => 'text',
+                'description'   => lang('Enter your username for your OpenSRS reseller account.<br/>'),
+                'value'         => '',
+            ),
+            lang('Private Key')  => array(
+                'type'          => 'text',
+                'description'   => lang('Enter your OpenSRS reseller private key.'),
+                'value'         => '',
+            ),
+            lang('Supported Features')  => array(
+                'type'          => 'label',
+                'description'   => '* ' . lang('TLD Lookup, with Name Suggestions') . '<br>* ' . lang('Domain Registration') . ' <br>* ' . lang('Domain Registration with ID Protect') . ' <br>* ' . lang('Existing Domain Importing') . ' <br>* ' . lang('Get / Set Auto Renew Status') . ' <br>* ' . lang('Get / Set Nameserver Records') . ' <br>* ' . lang('Get / Set Contact Information') . ' <br>* ' . lang('Get / Set Registrar Lock') . ' <br>* ' . lang('Initiate Domain Transfer') . ' <br>* ' . lang('Automatically Renew Domain') . ' <br>',
+                'value'         => ''
+            ),
+            lang('Actions') => array (
+                'type'          => 'hidden',
+                'description'   => lang('Current actions that are active for this plugin (when a domain isn\'t registered)'),
+                'value'         => 'Register'
+            ),
             lang('Registered Actions') => array (
-                                'type'          => 'hidden',
-                                'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
-                                'value'         => 'Renew (Renew Domain),DomainTransfer (Initiate Transfer),SendTransferKey (Send Auth Info),Cancel',
-                                ),
-              lang('Registered Actions For Customer') => array (
-                                'type'          => 'hidden',
-                                'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
-                                'value'         => 'SendTransferKey (Send Auth Info)',
+                'type'          => 'hidden',
+                'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
+                'value'         => 'Renew (Renew Domain),DomainTransfer (Initiate Transfer),SendTransferKey (Send Auth Info),Cancel',
+            ),
+            lang('Registered Actions For Customer') => array (
+                'type'          => 'hidden',
+                'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
+                'value'         => 'SendTransferKey (Send Auth Info)',
             )
         );
 
@@ -154,7 +154,7 @@ class PluginOpensrs extends RegistrarPlugin
         return $userPackage->getCustomField('Domain Name') . ' has been renewed.';
     }
 
-     /**
+    /**
      * Initiate a domain transfer
      *
      * @param array $params
@@ -225,7 +225,7 @@ class PluginOpensrs extends RegistrarPlugin
         }
         $code = $return[$status_key]['#'];
         if ($code == 210 || $code == 200 || $code == 250) {
-             // We are completed, so update our internal status so we don't try to check everytime.
+            // We are completed, so update our internal status so we don't try to check everytime.
             if ($transfer_status == 'completed' || $transfer_status == 'The transfer completed successfully') {
                 $userPackage->setCustomField('Transfer Status', 'Completed');
             }
@@ -338,8 +338,17 @@ class PluginOpensrs extends RegistrarPlugin
      *
      * @return array
      */
+    /**
+     * Function to renew the given domain. This needs tidying up
+     *
+     * @return array
+     */
     public function renewDomain($params)
     {
+        if (!$this->canAutoRenewDomain($params)) {
+            throw new CE_Exception('Cannot renew ' . strtolower($params['sld']) . '.' . strtolower($params['tld']) . ', domain is past the expiration grace period and needs a manual redemption');
+        }
+
         if ($params['Use testing server']) {
             $host = 'horizon.opensrs.net';
         } else {
@@ -395,7 +404,7 @@ class PluginOpensrs extends RegistrarPlugin
             }
         }
 
-        CE_Lib::log(4, "OpenSRS Registration Response: " . $return[$status_text]['#']);
+        CE_Lib::log(4, "OpenSRS Renewal Response: " . $return[$status_text]['#']);
 
         if (isset($attributes_key)) {
             if (isset($return[$attributes_key]) && isset($return[$attributes_key]['#']['dt_assoc'][0]['#']['item'])) {
@@ -412,7 +421,7 @@ class PluginOpensrs extends RegistrarPlugin
 
         $code = $return[$status_key]['#'];
         if ($code == 210 || $code == 200 || $code == 250) {
-            // Registration was fine
+            // Renewal was fine
             return $regId;
         }
         if ($code == 485) {
@@ -926,5 +935,27 @@ class PluginOpensrs extends RegistrarPlugin
                 return $k;
             }
         }
+    }
+
+    public function canAutoRenewDomain($params): bool
+    {
+        $domain = strtolower($params['sld']) . '.' . strtolower($params['tld']);
+        $host = ($params['Use testing server']) ? $this->testHost : $this->liveHost;
+        $opensrs = new OpenSRS($host, $this->connPort, $params['Username'], $params['Private Key'], $this->user);
+
+        $return = $opensrs->getDomainInfo(strtolower($params['sld']), strtolower($params['tld']), 'general');
+        if ($return == null) {
+            CE_Lib::log(4, 'OpenSRS: no usable response for ' . $domain . ', blocking autorenew');
+            return false;
+        }
+
+        // get_domain only returns results while a domain is active or in the expiration
+        // grace period, so a failed lookup means it is past grace and needs a REDEEM
+        if ($return['status']['response_code'] != 200) {
+            CE_Lib::log(4, 'OpenSRS: ' . $domain . ' not renewable: ' . $return['status']['response_text']);
+            return false;
+        }
+
+        return true;
     }
 }
